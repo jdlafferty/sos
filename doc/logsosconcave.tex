@@ -1,0 +1,220 @@
+\documentclass[12pt]{imsart}
+\setattribute{infoline}{text}{file: \jobname.tex\ date: \today}
+\def\abstractname{Summary}
+
+\RequirePackage[OT1]{fontenc}
+\RequirePackage{amsthm,amsmath,amsfonts,natbib}
+%\RequirePackage[colorlinks,citecolor=blue,urlcolor=blue]{hyperref}
+\RequirePackage{hypernat}
+\usepackage{times}
+%\usepackage[lite,subscriptcorrection,slantedGreek,nofontinfo]{mtpro2}
+\bibliographystyle{abbrvnat}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{fullpage}
+\usepackage{graphicx,url}
+
+\bibpunct{(}{)}{;}{a}{,}{,}
+
+% settings
+%\pubyear{2006}
+%\volume{0}
+%\issue{0}
+%\firstpage{1}
+%\lastpage{8}
+
+\startlocaldefs
+\numberwithin{equation}{section}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{corollary}{Corollary}[section]
+\newtheorem{proposition}{Proposition}[section]
+\newtheorem{lemma}{Lemma}[section]
+\newtheoremstyle{remark}{\topsep}{\topsep}%
+     {\normalfont}% Body font
+     {}           % Indent amount (empty = no indent, \parindent = para indent)
+     {\bfseries}  % Thm head font
+     {.}          % Punctuation after thm head
+     {.5em}       % Space after thm head (\newline = linebreak)
+     {\thmname{#1}\thmnumber{ #2}\thmnote{ #3}}% Thm head spec
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}[section]
+\newtheorem{example}{Example}[section]
+\newtheorem{assumption}{Assumption}[section]
+\newtheorem{definition}{Definition}[section]
+\endlocaldefs
+
+\renewcommand{\baselinestretch}{1.1}
+\setcounter{tocdepth}{2}
+%\parskip12pt
+\parindent15pt
+\footskip30pt
+%\large\normalsize
+\def\comma{\unskip,~}
+\def\truep{p^*}
+\def\div{\|\,}
+\long\def\comment#1{}
+\def\reals{{\mathbb R}}
+\def\P{{\mathbb P}}
+\def\E{{\mathbb E}}
+\def\supp{\mathop{\text{supp}\kern.2ex}}
+\def\argmin{\mathop{\text{\rm arg\,min}}}
+\def\arginf{\mathop{\text{\rm arg\,inf}}}
+\def\argmax{\mathop{\text{\rm arg\,max}}}
+\let\hat\widehat
+\let\tilde\widetilde
+\def\csd{${}^*$}
+\def\mld{${}^\dag$}
+\def\dos{${}^\ddag$}
+\def\W{\widetilde Y}
+\def\Z{\widetilde X}
+\let\hat\widehat
+\let\tilde\widetilde
+\def\ds{\displaystyle}
+\def\bs{\backslash}
+\def\1{{(1)}}
+\def\2{{(2)}}
+\def\pn{{(n)}}
+\def\ip{{(i)}}
+\def\Xbar{\overline{X}}
+\def\except{\backslash}
+\def\npn{\mathop{\textit{NPN\,}}}
+\def\npnsymbol{
+  \pspicture(-.2,-.2)(.2,.2)
+  \def\cw{.20}
+  \cnode[fillstyle=none,linewidth=.5pt](0,0){8pt}{L1}
+  \rput(0,0){\tiny\PHhide}
+  \psline[linewidth=.5pt,linecolor=black]{-}(-\cw,-\cw)(\cw,\cw)
+  \endpspicture
+}
+\def\i{{(i)}}
+\def\cE{{\mathcal{C}}}
+\def\cM{{\mathcal{M}}}
+\def\cF{{\mathcal{F}}}
+\def\cP{{\mathcal{P}}}
+\def\cG{{\mathcal{G}}}
+\def\M{{\mathcal{M}}}
+\def\tr{\mathop{\text{tr}}}
+\long\def\comment#1{}
+\def\N{\textit{N}\kern.3ex}
+\def\t{{\scriptstyle \top}}
+\def\fs{\footnotesize}
+\let\hat\widehat
+\let\epsilon\varepsilon
+\let\phi\varphi
+\def\ccc{CCC}
+\def\N{\mbox{\it N}\,}
+\def\NPN{\mathop{\mbox{\it NPN}}\,}
+\def\F{\mathcal{F}}
+\def\T{\mathcal{T}}
+\def\H{\mathcal{H}}
+\def\S{S}
+\def\X{\mathcal{F}}
+\def\Cov{\mathop{\mathbb{C}\textrm{ov}}\kern.1ex}
+\def\Var{\mathop{\mathbb{V}\textrm{ar}}\kern.1ex}
+\def\had{\!\circ\!}
+\def\PNL{X^v}
+\def\Cost{C^v}
+\def\Value{V^v}
+\def\Fill{\iS}
+\def\Impacted{\tilde S}
+\def\uS{\tilde S}
+\def\iS{S^v}
+\def\Volume{\tilde N}
+\def\uVolume{N}
+\def\diag{\text{diag}}
+\def\reals{{\mathbb R}}
+\def\P{{\mathbb P}}
+\def\E{{\mathbb E}}
+\def\supp{\mathop{\text{supp}\kern.2ex}}
+\def\argmin{\mathop{\text{arg\,min}\kern.2ex}}
+\def\argmax{\mathop{\text{arg\,max}\kern.2ex}}
+\let\hat\widehat
+\let\tilde\widetilde
+\def\csd{${}^*$}
+\def\mld{${}^\dag$}
+\def\dos{${}^\ddag$}
+\def\W{\widetilde Y}
+\def\Z{\widetilde X}
+\def\given{\,|\,}
+\def\C{\mathcal{C}}
+\def\D{\mathcal{D}}
+\def\M{\mathcal{M}}
+%\def\N{\mathcal{N}}
+\def\N{S}
+\def\X{\mathcal{X}}
+\def\tr{\mathop{\text{tr}}}
+\def\ntr{\mathop{\text{tr}_n}}
+\def\ptr{\mathop{\text{tr}_p}}
+\def\s{\backslash}
+\def\p{\partial}
+\def\MS#1{\tilde{#1}}
+%\def\MS#1{#1[\uS]}
+
+
+\parskip12pt
+\parindent0pt
+
+\begin{document}
+
+\begin{frontmatter}
+%\centerline{\large\bf Log-SOS-Concave Density Estimation and Graphical
+%  Modeling}
+\end{frontmatter}
+
+\par
+%\section{Introduction}
+%\label{intro}
+
+%\section{Problem}
+\stepcounter{section}
+
+Here is an idea for how we can form a class of log-concave densities
+for which the optimization will involve finite-dimensional
+semidefinite programming.  This may lead to a
+theoretically and practically tractable family 
+of log-concave density estimators and graphical models.
+
+
+To begin, skim Chapter 3, ``Convexity and SOS-Convexity'' in the MIT dissertation of 
+Amir Ali Ahmadi, ``Algebraic Relaxations and Hardness Results
+in Polynomial Optimization and Lyapunov Analysis,''
+{\small \url{http://hdl.handle.net/1721.1/68434}}.
+(Recall that Philippe Rigollet pointed us to this work.)
+
+Now, define the family of log-sos-concave densities as 
+\begin{equation}
+p(x) \propto \exp\left(-q(x)\right)
+\end{equation}
+where $q(x)$ is an sos-convex polynomial.  
+We can thus write $q(x) = \theta^T \phi(x)$ where $\phi(x)$ is a
+basis of polynomials, e.g., $\phi(x) = (1,x_1,x_2,\ldots, x_p, x_1x_2,\ldots, x_p^{d})$. 
+
+The statement that 
+$\theta^T \phi_\theta(x)$ is an sos-convex function
+means that $r_\theta(x,y) \equiv y^T H_\theta(x) y$ is an sos polynomial, 
+where $H_\theta(x) = \nabla^2 \phi_\theta(x)$ is the Hessian,
+and $y=(y_1,\ldots, y_p)$.  Equivalently, 
+\begin{align}
+y^T H_\theta(x) y & = z^T Q z \\
+Q & \succeq 0
+\end{align}
+where $z$ represents the homogeneous polynomials in $(x,y)$ up to
+order $d/2$. This property is equivalent to a semidefinite feasibility program.
+
+Since a log-sos-concave density is log-concave, sampling is efficient.
+Thus, the score function
+\begin{equation}
+\nabla \ell(\theta) = \frac{1}{n} \sum_{i=1}^n \phi(X_i) - \E_\theta\bigl(\phi(X)\bigr)
+\end{equation}
+can be efficiently approximated. Together with the computational 
+tractability of semidefinite programming, this should
+in principle lead to a tractable family of densities and
+graphical models. 
+
+The book ``Moments, Positive Polynomials and Their Applications,'' by Jean
+Bernard Lasserre,
+{\small\url{http://www.stat.uchicago.edu/~lekheng/courses/310/books/lasserre.pdf}}
+may be a good resource for ideas and results relevant to this direction.
+
+\end{document}
