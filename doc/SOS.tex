@@ -202,6 +202,63 @@ Finally, note that the entire program depends on the degree of the SOS-convex po
 \item How can SDP hierarchy (e.g. by Lasserre) help choosing/removing $d$?
 \end{enumerate}
 
+\clearpage
+\section{Convexity Pattern Problem}
+
+We now consider a more restricted family of distributions that are hopefully more tractable and also have interesting applications.
+
+With the familiar regression setting as in \eqref{cvx-reg}, first consider the additional constraint that $f$ is not only convex but also a function of only a few variables from $\bfx = (x_1, \dotsc, x_p)$. For example, we may have
+\[
+f(x_1, \dotsc, x_p) = f(x_1, x_2) \qquad \forall\ \bfx \in \R^p
+\]
+as one of the possibilities. 
+
+In \cite{DCM}, Qi, Xu, and Lafferty shows a way to approximate the solution to the above problem \emph{additively}. Specifically, this is 
+\optprob{minimize}{f_1, \dotsc, f_p}{\sum_{i=1}^n{(y_i - \sum_{j=1}^p f_j(x_{ij}))^2}}{f_1, \dotsc, f_p \text{ convex}}{cvx-additive-reg}
+where $\bfx_i = (x_{i1}, \dotsc, x_{ip}) \in \R^p$. In other words, we have the model
+\[
+Y = \sum_{j=1}^p f_j(X_j) + \e
+\]
+in the population, with random variables $X = (X_1, \dotsc, X_p) \in \R^p$ and $Y \in \R$.
+
+We can view this as a problem of \emph{sparsity patterns}, i.e. whether each variable is ``relevant'' ($f_j \not\equiv 0$) or not ($f_j \equiv 0$), and it is clear that there are $2^p$ sparsity patterns with $p$ variables.
+
+\textbf{Here, we consider an analogous problem of choosing whether each $f_j$ is convex or concave.} Naturally, there are $2^p$ \emph{convexity patterns}. We can write this problem as the following optimization problem:
+\begin{equation}\label{cvx-pattern}
+\begin{aligned}
+& \underset{\bfZ, \bff, \bfg}{\text{minimize}}
+& & \sum_{i=1}^n \inparen{y_i - \sum_{j=1}^p\insquare{Z_jf_j(x_{ij}) + (1-Z_j)g_j(x_{ij})}}^2 \\
+& \text{\quad\ s.t.}
+& & Z_1, \dotsc, Z_p \in \{0,1\} \\
+& & & f_1, \dotsc, f_p \text{ convex} \\
+& & & g_1, \dotsc, g_p \text{ concave} 
+\end{aligned}
+\end{equation}
+Note that $Z_1, \dotsc, Z_p$ are 0/1-boolean variables and $f_1, \dotsc, f_p, g_1, \dotsc, g_p$ are univariate functions.
+
+In order to make the problem more tractable, we first give extra constraints: namely, that $f_1, \dotsc, f_p, g_1, \dotsc, g_p$ are \emph{polynomials}. It is important to note that a univariate polynomial is convex if and only if it is SOS-convex. [Problem: Is the set of convex polynomials dense in the set of convex functions? Is this relevant?] We can rewrite the program as follows:
+\begin{equation}\label{cvx-pattern2}
+\begin{aligned}
+& \underset{\bfZ, \bff, \bfg}{\text{minimize}}
+& & \sum_{i=1}^n \inparen{y_i - \sum_{j=1}^p\insquare{Z_jf_j(x_{ij}) + (1-Z_j)g_j(x_{ij})}}^2 \\
+& \text{\quad\ s.t.}
+& & Z_1, \dotsc, Z_p \in \{0,1\} \\
+& & & f_1, \dotsc, f_p \text{ are (SOS-)convex polynomials of degree at most $d$} \\
+& & & g_1, \dotsc, g_p \text{ are (SOS-)concave polynomials of degree at most $d$} 
+\end{aligned}
+\end{equation}
+Using the similar trick as above, we hope to convert the constraints on $f_1, \dotsc, f_p, g_1, \dotsc, g_p$ into linear or semidefinite ones. 
+
+A more important feature of this program is the use of 0-1 variables. It is well-known that, in general, solving a 0-1 integer linear program is NP-hard, and one of the standard procedures in theoretical computer science in dealing with this problem is to relax it such that the boolean constraint is replaced by $Z_1, \dotsc, Z_p \in [0,1]$, or equivalently the quadratic constraint $Z_j^2 - Z_j \leq 0\ \forall j=1, \dotsc, p$.
+
+With this relaxation comes a family of LP/SDP hierarchies, such as the ones developed by Lov\'asz-Schrijver, Sherali-Adams, and Lasserre. [Prof. Madhur Tulsiani's Survey] These hierarchies are all a sequence of convex programs (LPs or SDPs) whose objective approaches the actual 0-1 solution. 
+
+A good way to think about the hierarchies for 0-1 programs is to consider the $Z_j$'s the marginals of a distribution over a set of 0-1 solutions. Specifically, in the initial ``round'', consider $Z_j$ to be the marginal of the solution whose $j$th entry is 1 and all others are zero. Then, in consecutive rounds, the goal is to add the \emph{joint probabilities} between these variables -- in the $r$th round, we consider the joint random variables $Z_S$ for each $S \subseteq \{1, \dotsc, p\}$ such that $\abs{S} \leq r$. One can think of these ``big variables'' as $Z_S = \ex{\prod_{j \in S} Z_j}$, i.e. the probability that all variables in $S$ are 1.
+
+Our hope is to use one of the hierarchies to solve a set of relaxations of \eqref{cvx-pattern2} that approximates the actual solution efficiently.
+
+\clearpage
+\section{Log-SOS-Concave Density Estimation}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % I have actually re-defined the \cite{} command so that the
@@ -223,6 +280,9 @@ Cambridge University Press.
 \bibentry{Lasserre}{\sc Lasserre, J. B.} (2009).
 {\it Moments, Positive Polynomials and Their Applications}. Vol. 1. 
 World Scientific.
+\bibentry{DCM}{\sc Qi, Y.}, {\sc Xu, M.}, and {\sc Lafferty, J.} (2014).
+{\it Learning High-Dimensional Concave Utility Functions for Discrete Choice Models}.
+NIPS Submission.
 \endrefs
 
 
