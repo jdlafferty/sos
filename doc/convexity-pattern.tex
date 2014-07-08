@@ -170,15 +170,15 @@
 One formulation of the convex regression problem is 
 \begin{align}
 \min_{f,\beta}\quad & \sum_{i=1}^n (Y_i - f_i)^2 \\
-\text{such that}\quad & f_{i'} \geq f_i + \beta_i^T(x_{i'}-x_i),
-              \quad \text{for all $i,i'$}
+\text{such that}\quad & f_{i'} \geq f_i + \beta_i^T(x_{i'}-x_i)
+              \; \text{for all $i,i'$}
 \end{align}
 The optimization for a convex additive model is
 \begin{align}
 \min_{f,\beta}\quad & \sum_{i=1}^n \bigl(Y_i - \sum_{j=1}^p f_{ij}\bigr)^2 \\
-\text{such that}\quad & f_{i'j} \geq f_{ij} + \beta_{ij}(x_{i'j}-x_{ij}),
-              \quad \text{for all $i,i'$, and $j=1,\ldots, p$} \\
-  & \sum_{i=1}^n f_{ij} = 0\quad j=1,\ldots, p.
+\text{such that}\quad & \text{for all $j=1,\ldots, p$:}\\
+& f_{i'j} \geq f_{ij} + \beta_{ij}(x_{i'j}-x_{ij}) \; \text{for all $i,i'$}\\
+& \sum_{i=1}^n f_{ij} = 0.
 \end{align}
 In the convexity-pattern estimation problem, we want to 
 estimate the regression function as $m(x) = \sum_{j=1}^p
@@ -188,11 +188,12 @@ and at most one of $f_j$ and $g_j$ is nonzero.
 Formulate this as
 \begin{align}
 \min_{f,g,\beta,\gamma,z,w}\quad & \sum_{i=1}^n \bigl(Y_i - \sum_{j=1}^p (f_{ij}+g_{ij})\bigr)^2 \\
-\text{such that}\quad & \text{for all $j=1,\ldots, p$:} \\
-  & f_{i'j} \geq f_{ij} + \beta_{ij}(x_{i'j}-x_{ij}) \quad \text{for all $i,i'$}\\
-  & g_{i'j} \leq g_{ij} + \gamma_{ij}(x_{i'j}-x_{ij})\quad \text{for all $i,i'$}\\
-  & \sum_{i=1}^n f_{ij} = 0\quad j=1,\ldots, p \\
-  & \sum_{i=1}^n g_{ij} = 0\quad j=1,\ldots, p \\
+\text{such that}\quad 
+  & \text{for all $j=1,\ldots, p$:}\\
+  & f_{i'j} \geq f_{ij} + \beta_{ij}(x_{i'j}-x_{ij}) \; \text{for all $i,i'$}\\
+  & g_{i'j} \leq g_{ij} + \gamma_{ij}(x_{i'j}-x_{ij})\; \text{for all $i,i'$}\\
+  & \sum_{i=1}^n f_{ij} = 0 \\
+  & \sum_{i=1}^n g_{ij} = 0 \\
   & \sqrt{\sum_{i=1}^n f_{ij}^2} \leq z_j B \\
   & \sqrt{\sum_{i=1}^n g_{ij}^2} \leq w_j B \\
   & z_j + w_j \leq 1\\
