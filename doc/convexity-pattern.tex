@@ -1,0 +1,206 @@
+\documentclass[12pt]{imsart}
+\setattribute{infoline}{text}{file: \jobname.tex\ date: \today}
+\def\abstractname{Summary}
+
+\RequirePackage[OT1]{fontenc}
+\RequirePackage{amsthm,amsmath,amsfonts,natbib}
+%\RequirePackage[colorlinks,citecolor=blue,urlcolor=blue]{hyperref}
+\RequirePackage{hypernat}
+\usepackage{times}
+%\usepackage[lite,subscriptcorrection,slantedGreek,nofontinfo]{mtpro2}
+\bibliographystyle{abbrvnat}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{fullpage}
+\usepackage{graphicx,url}
+
+\bibpunct{(}{)}{;}{a}{,}{,}
+
+% settings
+%\pubyear{2006}
+%\volume{0}
+%\issue{0}
+%\firstpage{1}
+%\lastpage{8}
+
+\startlocaldefs
+\numberwithin{equation}{section}
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{corollary}{Corollary}[section]
+\newtheorem{proposition}{Proposition}[section]
+\newtheorem{lemma}{Lemma}[section]
+\newtheoremstyle{remark}{\topsep}{\topsep}%
+     {\normalfont}% Body font
+     {}           % Indent amount (empty = no indent, \parindent = para indent)
+     {\bfseries}  % Thm head font
+     {.}          % Punctuation after thm head
+     {.5em}       % Space after thm head (\newline = linebreak)
+     {\thmname{#1}\thmnumber{ #2}\thmnote{ #3}}% Thm head spec
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}[section]
+\newtheorem{example}{Example}[section]
+\newtheorem{assumption}{Assumption}[section]
+\newtheorem{definition}{Definition}[section]
+\endlocaldefs
+
+\renewcommand{\baselinestretch}{1.1}
+\setcounter{tocdepth}{2}
+%\parskip12pt
+\parindent15pt
+\footskip30pt
+%\large\normalsize
+\def\comma{\unskip,~}
+\def\truep{p^*}
+\def\div{\|\,}
+\long\def\comment#1{}
+\def\reals{{\mathbb R}}
+\def\P{{\mathbb P}}
+\def\E{{\mathbb E}}
+\def\supp{\mathop{\text{supp}\kern.2ex}}
+\def\argmin{\mathop{\text{\rm arg\,min}}}
+\def\arginf{\mathop{\text{\rm arg\,inf}}}
+\def\argmax{\mathop{\text{\rm arg\,max}}}
+\let\hat\widehat
+\let\tilde\widetilde
+\def\csd{${}^*$}
+\def\mld{${}^\dag$}
+\def\dos{${}^\ddag$}
+\def\W{\widetilde Y}
+\def\Z{\widetilde X}
+\let\hat\widehat
+\let\tilde\widetilde
+\def\ds{\displaystyle}
+\def\bs{\backslash}
+\def\1{{(1)}}
+\def\2{{(2)}}
+\def\pn{{(n)}}
+\def\ip{{(i)}}
+\def\Xbar{\overline{X}}
+\def\except{\backslash}
+\def\npn{\mathop{\textit{NPN\,}}}
+\def\npnsymbol{
+  \pspicture(-.2,-.2)(.2,.2)
+  \def\cw{.20}
+  \cnode[fillstyle=none,linewidth=.5pt](0,0){8pt}{L1}
+  \rput(0,0){\tiny\PHhide}
+  \psline[linewidth=.5pt,linecolor=black]{-}(-\cw,-\cw)(\cw,\cw)
+  \endpspicture
+}
+\def\i{{(i)}}
+\def\cE{{\mathcal{C}}}
+\def\cM{{\mathcal{M}}}
+\def\cF{{\mathcal{F}}}
+\def\cP{{\mathcal{P}}}
+\def\cG{{\mathcal{G}}}
+\def\M{{\mathcal{M}}}
+\def\tr{\mathop{\text{tr}}}
+\long\def\comment#1{}
+\def\N{\textit{N}\kern.3ex}
+\def\t{{\scriptstyle \top}}
+\def\fs{\footnotesize}
+\let\hat\widehat
+\let\epsilon\varepsilon
+\let\phi\varphi
+\def\ccc{CCC}
+\def\N{\mbox{\it N}\,}
+\def\NPN{\mathop{\mbox{\it NPN}}\,}
+\def\F{\mathcal{F}}
+\def\T{\mathcal{T}}
+\def\H{\mathcal{H}}
+\def\S{S}
+\def\X{\mathcal{F}}
+\def\Cov{\mathop{\mathbb{C}\textrm{ov}}\kern.1ex}
+\def\Var{\mathop{\mathbb{V}\textrm{ar}}\kern.1ex}
+\def\had{\!\circ\!}
+\def\PNL{X^v}
+\def\Cost{C^v}
+\def\Value{V^v}
+\def\Fill{\iS}
+\def\Impacted{\tilde S}
+\def\uS{\tilde S}
+\def\iS{S^v}
+\def\Volume{\tilde N}
+\def\uVolume{N}
+\def\diag{\text{diag}}
+\def\reals{{\mathbb R}}
+\def\P{{\mathbb P}}
+\def\E{{\mathbb E}}
+\def\supp{\mathop{\text{supp}\kern.2ex}}
+\def\argmin{\mathop{\text{arg\,min}\kern.2ex}}
+\def\argmax{\mathop{\text{arg\,max}\kern.2ex}}
+\let\hat\widehat
+\let\tilde\widetilde
+\def\csd{${}^*$}
+\def\mld{${}^\dag$}
+\def\dos{${}^\ddag$}
+\def\W{\widetilde Y}
+\def\Z{\widetilde X}
+\def\given{\,|\,}
+\def\C{\mathcal{C}}
+\def\D{\mathcal{D}}
+\def\M{\mathcal{M}}
+%\def\N{\mathcal{N}}
+\def\N{S}
+\def\X{\mathcal{X}}
+\def\tr{\mathop{\text{tr}}}
+\def\ntr{\mathop{\text{tr}_n}}
+\def\ptr{\mathop{\text{tr}_p}}
+\def\s{\backslash}
+\def\p{\partial}
+\def\MS#1{\tilde{#1}}
+%\def\MS#1{#1[\uS]}
+
+
+\parskip12pt
+\parindent0pt
+
+\begin{document}
+
+\begin{frontmatter}
+\end{frontmatter}
+
+\par
+%\section{Introduction}
+%\label{intro}
+
+%\section{Problem}
+\stepcounter{section}
+
+One formulation of the convex regression problem is 
+\begin{align}
+\min_{f,\beta}\quad & \sum_{i=1}^n (Y_i - f_i)^2 \\
+\text{such that}\quad & f_{i'} \geq f_i + \beta_i^T(x_{i'}-x_i),
+              \quad \text{for all $i,i'$}
+\end{align}
+The optimization for a convex additive model is
+\begin{align}
+\min_{f,\beta}\quad & \sum_{i=1}^n \bigl(Y_i - \sum_{j=1}^p f_{ij}\bigr)^2 \\
+\text{such that}\quad & f_{i'j} \geq f_{ij} + \beta_{ij}(x_{i'j}-x_{ij}),
+              \quad \text{for all $i,i'$, and $j=1,\ldots, p$} \\
+  & \sum_{i=1}^n f_{ij} = 0\quad j=1,\ldots, p.
+\end{align}
+In the convexity-pattern estimation problem, we want to 
+estimate the regression function as $m(x) = \sum_{j=1}^p
+\bigl\{f_j(x_j) + g_j(x_j)\bigr\}$ where $f_j$ is convex, $g_j$ is concave,
+and at most one of $f_j$ and $g_j$ is nonzero.
+
+Formulate this as
+\begin{align}
+\min_{f,g,\beta,\gamma,z,w}\quad & \sum_{i=1}^n \bigl(Y_i - \sum_{j=1}^p (f_{ij}+g_{ij})\bigr)^2 \\
+\text{such that}\quad & \text{for all $j=1,\ldots, p$:} \\
+  & f_{i'j} \geq f_{ij} + \beta_{ij}(x_{i'j}-x_{ij}) \quad \text{for all $i,i'$}\\
+  & g_{i'j} \leq g_{ij} + \gamma_{ij}(x_{i'j}-x_{ij})\quad \text{for all $i,i'$}\\
+  & \sum_{i=1}^n f_{ij} = 0\quad j=1,\ldots, p \\
+  & \sum_{i=1}^n g_{ij} = 0\quad j=1,\ldots, p \\
+  & \sqrt{\sum_{i=1}^n f_{ij}^2} \leq z_j B \\
+  & \sqrt{\sum_{i=1}^n g_{ij}^2} \leq w_j B \\
+  & z_j + w_j \leq 1\\
+  & z_j, w_j \in \{0,1\}.
+\end{align}
+Without the last nonconvex zero/one constraint, this is a
+second-order cone program (SOCP).  A natural relaxation of this is
+to $z_j, w_j \in[0,1]$.  Can we tighten this approximation
+using a semidefinite relaxation \`a la Lasserre?
+
+\end{document}
