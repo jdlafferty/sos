@@ -47,23 +47,28 @@ Given $\{(\bfx_i, y_i)\}_{i=1}^n$, where $\bfx_i \in \R^p$ and $y_i \in \R$ for 
 
 In particular, we can reduce the infinite-dimensional problem \eqref{cvx-reg} into a finite-dimensional quadratic program (QP) \eqref{cvx-reg-qp}, which can be efficiently solved. The solution to \eqref{cvx-reg-qp} can be viewed as a piecewise-linear convex function. 
 
-Here, we attempt to derive the analogous equivalence, i.e. find an equivalent convex optimization problem to the following infinite-dimensional problem:
+Here, we attempt to derive the analogous equivalence, i.e. find an equivalent convex optimization problem to the following optimization problem:
 \optprob{minimize}{}{\sum_{i=1}^n\inparen{y_i - f(\bfx_i)}^2}{\text{$f$ is an SOS-convex polynomial of degree $2d$.}}{sos-reg}
 
-Denote the vector of basis monomials up to degree $d$ by $\bfv_d(\bfx) = (1, x_1, \dotsc, x_p, x_1x_2, \dotsc, x_p^d)$, where $\bfx = (x_1, \dotsc, x_p)$. Also, let $s = {2d + p \choose p}$ denote the length of this vector for degree $2d$. Then, we may replace $f$ with a coefficient vector $\bftheta \in \R^s$, such that
+Denote the vector of basis monomials up to degree $k$ by $\bfv_k(\bfx) = (1, x_1, \dotsc, x_p, x_1^2, x_1x_2, \dotsc, x_p^k)^T$, where $\bfx = (x_1, \dotsc, x_p)$. Then the length of $\bfv_k(\bfx)$ is ${k + p \choose p}$. Let
+$$A_k = \left\{ \bfalpha = (\alpha_1, \dotsc, \alpha_p) \in \N^p \biggl| \sum_{j=1}^p \alpha_j \leq k \right\}.$$
+
+Then, we may represent $f$ by a coefficient vector $\bftheta \in \R^s$($s = {2d + p \choose p}$), such that
 \[
-f(\bfx) = \bftheta^T\bfv_{2d}(\bfx).
+f(\bfx) = \bftheta^T\bfv_{2d}(\bfx) = \sum_{\bfalpha \in A_{2d}} \theta_\bfalpha \bfx^\bfalpha,
 \]
-Note the one-to-one correspondence between $f$ and $\bftheta$. Further, as done with the convex program, we introduce the auxiliary variable $\bfz = (z_1, \dotsc, z_n)$ so that 
+where $\bfx^\bfalpha = x_1^{\alpha_1}\cdots x_p^{\alpha_p}$. Note the one-to-one correspondence between $f$ and $\bftheta$.
+
+Further, as done with the convex program, we introduce the auxiliary variable $\bfz = (z_1, \dotsc, z_n)$ so that 
 \begin{equation}\label{aux}
 f(\bfx_i) = \bftheta^T\bfv_{2d}(\bfx_i) = z_i \qquad\forall\ i = 1, \dotsc, n.
 \end{equation}
 We can write this more concisely by introducing the matrix
 \[
 V = V(\bfx_1, \dotsc, \bfx_n) = \begin{bmatrix}
-\bfv_d(\bfx_1) \\
+\bfv_{2d}(\bfx_1)^T \\
 \vdots \\
-\bfv_d(\bfx_n)
+\bfv_{2d}(\bfx_n)^T
 \end{bmatrix}_{n \times s}
 \]
 so that \eqref{aux} simply becomes
@@ -71,70 +76,99 @@ so that \eqref{aux} simply becomes
 V\bftheta = \bfz.
 \end{equation}
 
-So we have a linear constraint on the coefficient $\theta$ that is equivalent to saying that the polynomial interpolates the points $\{(\bfx_i, z_i)\}_{i=1}^n$. Analogously, we can rewrite the objective to be
+So we have a linear constraint on the coefficient $\bftheta$ that is equivalent to saying that the polynomial interpolates the points $\{(\bfx_i, z_i)\}_{i=1}^n$. Analogously, we can rewrite the objective to be
 \begin{equation}\label{sos-reg-obj2}
 \sum_{i=1}^n(y_i - z_i)^2 = \norm{\bfy - \bfz}^2
 \end{equation}
 where $\bfy = (y_1, \dotsc, y_n)$ and $\bfz = (z_1, \dotsc, z_n)$.
 
 
-Now we want to rewrite the constraint that $f(\bfx) = \bftheta^T\bfv_d(\bfx)$ is SOS-convex. Recall that $p$ is SOS-convex if and only if
-\begin{equation}\label{sos-cvx}
-\bfu^TH_\bftheta(\bfx)\bfu = \bfv_d(\bfx,\bfu)^TQ\bfv_d(\bfx,\bfu)
+Now we want to rewrite the constraint that $f(\bfx) = \bftheta^T\bfv_{2d}(\bfx)$ is SOS-convex. Recall that $f$ is SOS-convex if and only if the polynomial $\bfu^TH_\bftheta(\bfx)\bfu$ is sos in $(\bfx, \bfu) \in \mathbb R^{2p}$, where $H_\bftheta(\bfx)$ is the Hessian of $f$.
+
+For $i, j\in\{1, \cdots, p\}$ we have
+\begin{equation} \label{hessian}
+H_\bftheta(\bfx)_{ij} = \frac{\partial^2 f(\bfx)}{\partial x_i \partial x_j}  = \sum_{\bfalpha \in A_{2d} } \theta_\bfalpha \frac{\partial^2 \bfx^\bfalpha}{\partial x_i \partial x_j} = 
+\begin{cases}
+\sum\limits_{\bfalpha \in A_{2d} } \theta_\bfalpha \alpha_i \alpha_j \bfx^{\bfbeta_{\bfalpha, i,j}} & (i \not= j)\\
+\sum\limits_{\bfalpha \in A_{2d}} \theta_\bfalpha \alpha_i (\alpha_i-1) \bfx^{\bfbeta_{\bfalpha, i,i}} & (i = j)
+\end{cases}
+= \sum_{\bfalpha \in A_{2d} } c_{\bfalpha, i, j} \theta_\bfalpha  \bfx^{\bfbeta_{\bfalpha, i,j}}
+\end{equation}
+where
+\begin{equation}\notag
+\bfbeta_{\bfalpha, i,j} =
+\begin{cases}
+ (\alpha_1, \dotsc, \max(\alpha_i-1, 0), \dotsc, \max(\alpha_j-1, 0), \dotsc, \alpha_p) & i \neq j\\
+(\alpha_1, \dotsc, \max(\alpha_i-2, 0), \dotsc, \alpha_p) & i = j
+\end{cases}
 \end{equation}
 and
-\begin{equation}\label{sos-cvx-psd}
-Q \psd 0
+\begin{equation}\notag
+c_{\bfalpha, i, j} =
+\begin{cases}
+\alpha_i \alpha_j  & i \not= j\\
+\alpha_i (\alpha_i - 1)  & i = j.
+\end{cases}
 \end{equation}
-where $Q$ is a symmetric $r \times r$ matrix with $r = {d + 2p \choose 2p}$, $H_\theta(\bfx)$ is the Hessian polynomial matrix of $p(\bfx) = \bftheta^T\bfv_d(\bfx)$, and $\bfu = (u_1, \dotsc, u_p)$. 
+%Note that both $\bfbeta_{\bfalpha, i,j}$ and $c_{\bfalpha, i, j}$ are functions of $\bfalpha, i, j$ and can be calculated.
 
-Note first that \eqref{sos-cvx} is an equality in the space of \emph{polynomials} on $2p$ variables: $\bfx$ and $\bfu$. Also, \textbf{\eqref{sos-cvx-psd} suggests that the convex optimization program that we attempt to build is a semidefinite program (SDP).}
+Then we have
+\begin{equation}\notag
+\bfu^TH_\bftheta(\bfx)\bfu = \sum_{i,j=1}^p \inparen{ \sum_{\bfalpha \in A_{2d}} c_{\bfalpha, i, j} \theta_\bfalpha  \bfx^{\bfbeta_{\bfalpha, i,j}} } u_iu_j,
+\end{equation}
+which can be further written as
+\begin{equation} \label{lhs}
+\bfu^TH_\bftheta(\bfx)\bfu = \sum_{1 \le i \le j \le p}  \sum_{\bfbeta \in A_{2d - 2}} h_\bftheta (\bfbeta, i, j) \bfx^{\bfbeta}  u_iu_j
+\end{equation}
+where
+\begin{equation}\notag
+h_\bftheta (\bfbeta, i, j) =
+\begin{cases}
+(\beta_i + 2) (\beta_i + 1) \theta_{(\beta_1, \cdots, \beta_i + 2, \cdots, \beta_p)} & i = j\\
+2(\beta_i + 1) (\beta_j + 1) \theta_{(\beta_1, \cdots, \beta_i + 1, \cdots, \beta_j + 1 \cdots, \beta_p)} & i < j.
+\end{cases}
+\end{equation}
 
-It is important to note that, \textbf{in this case where $f$ is a polynomial, the Hessian $H_\theta(\bfx)$ is easy to compute -- in fact, the coefficients of each entry of the Hessian are a linear function of the coefficient $\bftheta$ of the original polynomial $f$.} For a multinomial index $\bfalpha = (\alpha_1, \dotsc, \alpha_p) \in \N^p$ on $\bfx$ such that $\sum_{j=1}^p \alpha_j \leq d$, recall that the Hessian of $\bfx^\bfalpha$ with respect to $x_i$ and $x_j$ is
+It is then easy to see that $\bfu^TH_\bftheta(\bfx)\bfu$ is SOS if and only if
+\begin{equation} \label{sos-cvx}
+\bfu^TH_\bftheta(\bfx)\bfu = \bfv_d'(\bfx, \bfu)^T Q \bfv_d'(\bfx, \bfu)
+\end{equation}
+\begin{equation} \label{sos-cvx-psd}
+Q \succeq 0
+\end{equation}
+where $\bfv_d'(\bfx, \bfu)$ is the vector of all monomials in $(\bfx, \bfu)$ in which the degrees of all $x_i$'s have sum at most $d-1$ and there is exactly one $u_i$, i.e., 
+$$\bfv_d'(\bfx, \bfu) = (u_1 \bfv_{d-1}(\bfx)^T, u_2 \bfv_{d-1}(\bfx)^T, \cdots, u_p \bfv_{d-1}(\bfx)^T )^T.$$
+The length of $\bfv_d'(\bfx, \bfu)$ is $r = p{p+d-1 \choose p}$. $Q$ is a $r \times r$ matrix.
+
+\eqref{sos-cvx} is not a valid semidefinite constraint yet, because it is an equality between two polynomials. This means we want to equate the \emph{coefficients} of the two polynomials on $(\bfx, \bfu)$. The left-hand side is given by \eqref{lhs}. Further, we can express the right-hand side in terms of their coordinates in the following way. First define the coordinate matrix $B_{\bfbeta, i, j}$ for each $\bfbeta \in A_{2d - 2}, 1 \le i \le j \le p$ such that
 \[
-\frac{\partial}{\partial x_i}\frac{\partial}{\partial x_j} \bfx^\bfalpha = \alpha_i\alpha_j \bfx^{\bfalpha_{i,j}'}
+\bfv_d'(\bfx, \bfu) \bfv_d'(\bfx, \bfu)^T = \sum_{1 \le i \le j \le p}  \sum_{\bfbeta \in A_{2d - 2}} B_{\bfbeta, i, j} \bfx^{\bfbeta}  u_iu_j.
 \]
-where $\bfalpha_{i,j}' = (\alpha_1, \dotsc, \alpha_i-1, \dotsc, \alpha_j-1, \dotsc, \alpha_p)$ for $i \neq j$ and $\bfalpha_{i,i}' = (\alpha_1, \dotsc, \alpha_i-2, \dotsc, \alpha_p)$. Note that if $\alpha_i = 0$ for any $i$ then the Hessian is zero anyway.
-
-\eqref{sos-cvx} is not a valid semidefinite constraint yet, because it is an equality between two polynomials. This means we want to equate the \emph{coefficients} of the two polynomials on $(\bfx, \bfy)$. Note first that
-\begin{equation}\label{hessian}
-\bfu^TH_\bftheta(\bfx)\bfu = \sum_{i,j=1}^p \inparen{\frac{\partial}{\partial x_i}\frac{\partial}{\partial x_j}f(\bfx)} u_iu_j.
-\end{equation}
-Then, there is at most one term (zero iff the partial derivative is zero) for each $\bfalpha = (\alpha_1, \dotsc, \alpha_p) \in \N^p$ such that $\sum_{k=1}^p \alpha_k \leq d$, and for each $i, j = 1, \dotsc, p$. For each of these cases, we give a multinomial index $\bfgamma_{\bfalpha, i, j} \in \N^{2p}$ on $(\bfx, \bfu)$, and $\bfgamma_{\bfalpha, i, j}$ will have a few specific properties: the first $p$ coordinates are precisely $\bfalpha_{i,j}'$, which sum up to at most $d-2$, and the last $p$ coordinates are all zero except at the $(p+i)$th and the $(p+j)$th coordinate (only at the $(p+i)$th if $i = j$). The first corresponds to the fact that the Hessian can have at most degree $d-2$, and the second to the fact that each term has exactly one degree on $u_i$ and $u_j$. Thus, we have
-\begin{equation}\label{lhs}
-\bfu^TH_\bftheta(\bfx)\bfu = \sum_\bfalpha \sum_{i,j} H_\bftheta(\bfalpha, i, j) (\bfx, \bfu)^{\bfgamma_{\bfalpha, i, j}}
-\end{equation}
-where $H_\bftheta(\bfalpha, i, j)$ represents the scalar coefficient for the term $(\bfx, \bfu)^{\bfgamma_{\bfalpha, i, j}}$.
-
-Further, we can express the right-hand side in terms of their coordinates in the following way. First define the coordinate matrix $B_\bfgamma$ for each multi-index $\bfgamma \in \N^{2p}$ up to degree $2d$ such that
-\[
-\bfv_d(\bfx, \bfu)\bfv_d(\bfx, \bfu)^T = \sum_\bfgamma B_\bfgamma (\bfx, \bfu)^\bfgamma.
-\]
-Note that the matrices $B_\bfgamma$ are simply ``constants'', i.e. they do not depend on the data or the program variables. With this, the right-hand side becomes
+Note that the matrices $B_{\bfbeta, i, j}$'s are simply ``constants'', i.e. they only depend on $d$ (and $p$). With this, the right-hand side of \eqref{sos-cvx} becomes
 \begin{align}\label{rhs}
-\bfv_d(\bfx,\bfu)^TQ\bfv_d(\bfx,\bfu) &= \tr(Q\bfv_d(\bfx, \bfu)\bfv_d(\bfx, \bfu)^T) \notag\\
-&= \ip{Q, \bfv_d(\bfx, \bfu)\bfv_d(\bfx, \bfu)^T} \notag\\
-&= \ip{Q, \sum_\bfgamma B_\bfgamma (\bfx, \bfu)^\bfgamma} \notag\\
-&= \sum_\bfgamma \ip{Q, B_\bfgamma}(\bfx, \bfu)^\bfgamma
+\bfv_d'(\bfx,\bfu)^T Q \bfv_d'(\bfx,\bfu) &= \tr(Q \bfv_d'(\bfx, \bfu) \bfv_d'(\bfx, \bfu)^T) \notag\\
+&= \ip{Q, \bfv_d'(\bfx, \bfu) \bfv_d'(\bfx, \bfu)^T} \notag\\
+&= \ip{Q, \sum_{1 \le i \le j \le p} \sum_{\bfbeta \in A_{2d - 2}} B_{\bfbeta, i, j} \bfx^{\bfbeta}  u_iu_j} \notag\\
+&= \sum_{1 \le i \le j \le p} \sum_{\bfbeta \in A_{2d - 2}} \ip{Q, B_{\bfbeta, i, j}} \bfx^{\bfbeta}  u_iu_j
 \end{align}
-where $\ip{A,B} = \tr(A^TB) = \sum_{i,j} A_{ij}B_{ij}$ is the matrix inner product. Note that $Q$ is symmetric.
+where $\ip{A,B} = \tr(A^TB) = \sum_{i,j} A_{ij}B_{ij}$ is the  matrix inner product. Note that $Q$ is symmetric.
 
 Then, we can equate the coefficients of \eqref{lhs} and \eqref{rhs} to obtain:
 \begin{align}
-\ip{Q, B_{\bfgamma_{\bfalpha, i, j}}} &= H_\bftheta(\bfalpha, i, j) \qquad \forall\ \bfalpha, i, j \label{sos-cvx-coeff1}\\
-\ip{Q, B_{\bfgamma}} &= 0 \qquad\qquad \text{for all other $\bfgamma$} \label{sos-cvx-coeff2}
+\ip{Q, B_{\bfbeta, i, j}} = h_\bftheta(\bfbeta, i, j) \qquad \forall\ \bfbeta \in A_{2d - 2}, 1 \le i \le j \le p \label{sos-cvx-coeff}
+%\ip{Q, B_{\bfgamma}} &= 0 \qquad\qquad \text{for all other $\bfgamma$} \label{sos-cvx-coeff2}
 \end{align}
 
-Putting \eqref{sos-poly}, \eqref{sos-reg-obj2}, \eqref{sos-cvx-psd}, \eqref{sos-cvx-coeff1}, and \eqref{sos-cvx-coeff2} together, \eqref{sos-reg} can be restated as the following problem:
+Putting \eqref{sos-poly}, \eqref{sos-reg-obj2}, \eqref{sos-cvx-psd}, and \eqref{sos-cvx-coeff} together, \eqref{sos-reg} can be restated as the following problem:
 
 \begin{equation}\label{sos-reg2}
 \begin{aligned}
 & \underset{\bfz, \bftheta, Q}{\text{minimize}}
 & & \norm{\bfy-\bfz}^2 \\
 & \text{\quad\ s.t.}
-& & V\bftheta = \bfz \\
-& & & \langle{Q, B_{\bfgamma_{\bfalpha, i, j}}\rangle} = H_\bftheta(\bfalpha, i, j) \qquad \forall\ \bfalpha, i, j \\
-& & & \langle{Q, B_{\bfgamma}\rangle} = 0 \qquad \text{for all other $\bfgamma$} \\
+& &  V\bftheta = \bfz \\
+& & & \langle{Q, B_{\bfbeta, i, j}} \rangle = h_\bftheta(\bfbeta, i, j) \qquad \forall\ \bfbeta \in A_{2d - 2}, 1 \le i \le j \le p \\
+%& & & \langle{Q, B_{\bfgamma}\rangle} = 0 \qquad \text{for all other $\bfgamma$} \\
 & & & Q \psd 0 
 \end{aligned}
 \end{equation}
@@ -147,16 +181,16 @@ Putting \eqref{sos-poly}, \eqref{sos-reg-obj2}, \eqref{sos-cvx-psd}, \eqref{sos-
 & \text{\quad\ s.t.}
 & & \norm{\bfy-\bfz}^2 \leq t \\
 & & & V\bftheta = \bfz \\
-& & & \langle{Q, B_{\bfgamma_{\bfalpha, i, j}}\rangle} = H_\bftheta(\bfalpha, i, j) \qquad \forall\ \bfalpha, i, j \\
-& & & \langle{Q, B_{\bfgamma}\rangle} = 0 \qquad \text{for all other $\bfgamma$} \\
+& & & \langle{Q, B_{\bfbeta, i, j}} \rangle = h_\bftheta(\bfbeta, i, j) \qquad \forall\ \bfbeta \in A_{2d - 2}, 1 \le i \le j \le p \\
+%& & & \langle{Q, B_{\bfgamma}\rangle} = 0 \qquad \text{for all other $\bfgamma$} \\
 & & & Q \psd 0 
 \end{aligned}
 \end{equation}
 
 Then, we are left with a quadratic inequality constraint. Fortunately, the following allows us to convert this into a semidefinite constraint.
-\begin{fact}
+\begin{lemma}
 For any $\bfx, \bfq \in \R^p$ and $r \in \R$, $\bfx^T\bfx + \bfq^T\bfx + r \leq 0$ if and only if $\begin{bmatrix} I & -\bfx \\ -\bfx^T & -\bfq^T\bfx - r \end{bmatrix} \psd 0$.
-\end{fact}
+\end{lemma}
 \begin{proof}
 For any $\bfy \in \R^p$ and $z \in \R$, 
 \begin{align*}
@@ -181,8 +215,8 @@ Thus, we can now write \eqref{sos-reg3} into a semidefinite program:
 & \text{\quad\ s.t.}
 & & \begin{bmatrix} I & -\bfz \\ -\bfz^T & 2\bfy^T\bfz - \bfy^T\bfy + t \end{bmatrix} \psd 0 \\
 & & & V\bftheta = \bfz \\
-& & & \langle{Q, B_{\bfgamma_{\bfalpha, i, j}}\rangle} = H_\bftheta(\bfalpha, i, j) \qquad \forall\ \bfalpha, i, j \\
-& & & \langle{Q, B_{\bfgamma}\rangle} = 0 \qquad \text{for all other $\bfgamma$} \\
+& & & \langle{Q, B_{\bfbeta, i, j}} \rangle = h_\bftheta(\bfbeta, i, j) \qquad \forall\ \bfbeta \in A_{2d - 2}, 1 \le i \le j \le p \\
+%& & & \langle{Q, B_{\bfgamma}\rangle} = 0 \qquad \text{for all other $\bfgamma$} \\
 & & & Q \psd 0 
 \end{aligned}
 \end{equation}
@@ -197,7 +231,7 @@ Finally, note that the entire program depends on the degree of the SOS-convex po
 
 \begin{enumerate}
 \item What is the program size? Is it tractable?
-\item Can the zero constraints be simplified?
+%\item Can the zero constraints be simplified?
 \item For any given $d$, is the program feasible? What is the behavior of the objective $t_d$?
 \item How can SDP hierarchy (e.g. by Lasserre) help choosing/removing $d$?
 \end{enumerate}
