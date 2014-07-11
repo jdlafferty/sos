@@ -54,9 +54,9 @@ Denote the vector of basis monomials up to degree $k$ by $\bfv_k(\bfx) = (1, x_1
 $$A_k = \left\{ \bfalpha = (\alpha_1, \dotsc, \alpha_p) \in \N^p \biggl| \sum_{j=1}^p \alpha_j \leq k \right\}.$$
 
 Then, we may represent $f$ by a coefficient vector $\bftheta \in \R^s$($s = {2d + p \choose p}$), such that
-\[
+\begin{equation} \label{sos-cvx-poly}
 f(\bfx) = \bftheta^T\bfv_{2d}(\bfx) = \sum_{\bfalpha \in A_{2d}} \theta_\bfalpha \bfx^\bfalpha,
-\]
+\end{equation}
 where $\bfx^\bfalpha = x_1^{\alpha_1}\cdots x_p^{\alpha_p}$. Note the one-to-one correspondence between $f$ and $\bftheta$.
 
 Further, as done with the convex program, we introduce the auxiliary variable $\bfz = (z_1, \dotsc, z_n)$ so that 
@@ -110,7 +110,6 @@ c_{\bfalpha, i, j} =
 \alpha_i (\alpha_i - 1)  & i = j.
 \end{cases}
 \end{equation}
-%Note that both $\bfbeta_{\bfalpha, i,j}$ and $c_{\bfalpha, i, j}$ are functions of $\bfalpha, i, j$ and can be calculated.
 
 Then we have
 \begin{equation}\notag
@@ -293,6 +292,110 @@ Our hope is to use one of the hierarchies to solve a set of relaxations of \eqre
 
 \clearpage
 \section{Log-SOS-Concave Density Estimation}
+
+\subsection{Problem Formulation}
+Consider the family of log-sos-concave densities on $K \subseteq \mathbb R^p$:
+\begin{equation} \notag
+p(\bfx) \propto \exp \left(-f(\bfx)\right)
+\end{equation}
+or
+\begin{equation} \notag
+p(\bfx) = \frac{\exp (-f(\bfx))}{\int_K \exp (-f({\bf t})) d{\bf t}}.
+\end{equation}
+where $f(\bfx)$ is an sos-convex polynomial. If we restrict the degree of $f$ to be at most $2d$, then we can express $f$ same as \eqref{sos-cvx-poly}:
+\[
+f(\bfx) = \bftheta^T\bfv_{2d}(\bfx) = \sum_{\bfalpha \in A_{2d}} \theta_\bfalpha \bfx^\bfalpha.
+\]
+
+Given $n$ i.i.d. samples $\bfx_1, \cdots, \bfx_n$ from distribution $p(\bfx; \bftheta)$, the likelihood is
+\begin{equation} \notag
+L(\bftheta) = \prod_{i = 1} ^n p(\bfx_i; \bftheta) = \frac{\exp \left( -\bftheta^T \sum_{i = 1}^n \bfv_{2d}(\bfx_i)   \right)}{(\int_K \exp (-\bftheta^T\bfv_{2d}(\bfx)) d{\bf x})^n},
+\end{equation}
+and then
+$$- \frac{1}{n} \log L(\bftheta) = \frac{1}{n} \bftheta^T \sum_{i = 1}^n \bfv_{2d}(\bfx_i) + \log \int_K \exp (-\bftheta^T\bfv_{2d}(\bfx)) d{\bf x}.$$
+
+So the maximum likelihood estimation of $f$ (or equivalently, $\bftheta$) can be summerized by the following optimization problem:
+\optprob{minimize}{\bftheta}{\frac{1}{n} \bftheta^T \sum_{i = 1}^n \bfv_{2d}(\bfx_i) + \log \int_K \exp (-\bftheta^T\bfv_{2d}(\bfx)) d{\bf x} }
+{\text{$\bftheta^T \bfv_{2d}(\bfx)$ is sos-convex.}}{maxlike-reg}
+
+%Refer to the sos-convex regression problem. We know that \eqref{maxlike-reg} is equivalent to
+%\begin{equation} \label{maxlike-reg2}
+%\begin{aligned}
+%& \underset{\bftheta, Q}{\text{minimize}}
+%& & \frac{1}{n} \bftheta^T \sum_{i = 1}^n \bfv_{2d}(\bfx_i) + \log \int_K \exp (-\bftheta^T\bfv_{2d}(\bfx)) d{\bf x} \\
+%& \text{\quad\ s.t.}
+%& & \langle{Q, B_{\bfbeta, i, j}} \rangle = h_\bftheta(\bfbeta, i, j) \qquad \forall\ \bfbeta \in A_{2d - 2}, 1 \le i \le j \le p \\
+%& & & Q \psd 0 
+%\end{aligned}
+%\end{equation}
+
+Denote the above objective function by $g(\bftheta)$, which is a convex function. The gradient and Hessian of $g$ are:
+\begin{align}
+\nabla g(\bftheta) =& \frac{1}{n} \sum_{i = 1}^n \bfv_{2d}(\bfx_i) + \frac{\int_ K\exp (-\bftheta^T\bfv_{2d}(\bfx)) (-\bfv_{2d}(\bfx) )d{\bf x} }{\int_K \exp (-\bftheta^T\bfv_{2d}(\bfx)) d{\bf x}}\notag\\
+=& \frac{1}{n} \sum_{i = 1}^n \bfv_{2d}(\bfx_i) - \mathbb E_\bftheta (\bfv_{2d}(\bfX)),\label{neg-loglike-gradient}\\
+\nabla^2 g(\bftheta) =& \mathbb V_\bftheta (\bfv_{2d}(\bfX)), \label{neg-loglike-hessian}
+\end{align}
+where $\bfX$ is a random variable with distribution $p(\bfx; \bftheta)$.
+
+\subsection{Gradient Projection Algorithm (Sketch)}
+
+
+One possible approach to solving \eqref{maxlike-reg} is gradient projection algorithm, which generates a sequence $\{\bftheta_k\}$ through the recursion:
+\begin{equation} \label{gpa-recursion}
+\bftheta_{k + 1} \leftarrow P_{sos} (\bftheta_k - \alpha_k \nabla g(\bftheta_k) ), k = 0, 1, \cdots
+\end{equation}
+where the initial point $\bftheta_0$ is feasible for \eqref{maxlike-reg}, $\{\alpha_k\}$ is a positive sequence of stepsizes which may be chosen in different ways, and $P_{sos}(\bfgamma)$ is the projection of $\bfgamma$ onto the feasible set of \eqref{maxlike-reg}, i.e.,
+\begin{equation} \label{sos-proj-reg}
+\begin{aligned}
+ P_{sos}(\bfgamma): \qquad & \underset{\bftheta}{\text{minimize} }
+& & \norm{\bftheta - \bfgamma}^2 \\
+& \text{\quad\ s.t.}
+& & \text{$\bftheta^T \bfv_{2d}(\bfx)$ is sos-convex.}
+\end{aligned}
+\end{equation}
+
+Refer to the sos-convex regression problem. We know that \eqref{sos-proj-reg} is equivalent to
+\begin{equation} \label{sos-proj-reg2}
+\begin{aligned}
+ P_{sos}(\bfgamma): \qquad & \underset{\bftheta, Q}{\text{minimize} }
+& & \norm{\bftheta - \bfgamma}^2 \\
+& \text{\quad\ s.t.}
+& & \langle{Q, B_{\bfbeta, i, j}} \rangle = h_\bftheta(\bfbeta, i, j) \qquad \forall\ \bfbeta \in A_{2d - 2}, 1 \le i \le j \le p \\
+& & & Q \psd 0 
+\end{aligned}
+\end{equation}
+
+Similar to the transformation from \eqref{sos-reg2} to \eqref{sos-reg4}, \eqref{sos-proj-reg2} is equivalent to an SDP:
+\begin{equation} \label{sos-proj-reg3}
+\begin{aligned}
+ P_{sos}(\bfgamma): \qquad & \underset{\bftheta, Q, t}{\text{minimize} }
+& & t \\
+& \text{\quad\ s.t.}
+& & \begin{bmatrix} I & -\bftheta \\ -\bftheta^T & 2\bfgamma^T\bftheta - \bfgamma^T\bfgamma + t \end{bmatrix} \psd 0 \\
+& & & \langle{Q, B_{\bfbeta, i, j}} \rangle = h_\bftheta(\bfbeta, i, j) \qquad \forall\ \bfbeta \in A_{2d - 2}, 1 \le i \le j \le p \\
+& & & Q \psd 0 
+\end{aligned}
+\end{equation}
+
+Also, we want the objective value to go down at each iteration (unless it is already optimal), i.e.,
+$$g(\bftheta_{k + 1}) < g(\bftheta_k).$$
+Note that
+\begin{align*}
+g(\bftheta + \Delta \bftheta) - g(\bftheta) =& \frac{1}{n} (\Delta \bftheta)^T \sum_{i = 1}^n \bfv_{2d}(\bfx_i) + \log \frac{\int_K \exp\left( -(\bftheta+\Delta\bftheta)^T \bfv_{2d}(\bfx) \right) \text{d}\bfx}{\int_K \exp\left( -\bftheta^T \bfv_{2d}(\bfx) \right) \text{d}\bfx}\\
+=& \frac{1}{n} (\Delta \bftheta)^T \sum_{i = 1}^n \bfv_{2d}(\bfx_i) + \log \mathbb E_\bftheta (\exp( -(\Delta \bftheta)^T \bfv_{2d}(\bfX))).
+\end{align*}
+So we want
+\begin{equation} \label{down}
+\frac{1}{n} (\Delta \bftheta_k)^T \sum_{i = 1}^n \bfv_{2d}(\bfx_i) + \log \mathbb E_{\bftheta_k} (\exp\left( -(\Delta \bftheta_k)^T \bfv_{2d}(\bfX)  \right) ) < 0
+\end{equation}
+where $\Delta \bftheta_k = \bftheta_{k + 1} - \bftheta_k$.
+
+
+
+
+
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % I have actually re-defined the \cite{} command so that the
