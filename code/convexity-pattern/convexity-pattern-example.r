@@ -3,24 +3,24 @@ soft.threshold = function(x,lambda) {
   return(sign(x) * (abs(x)-lambda) * (abs(x) > lambda))
 }
 
-generator1 = function(n=150,d=50,sigma2=1){
+generator1 = function(n=150,d=50,sigma2=1) {
   epsilon = rnorm(n,0,sigma2)
   M = matrix(NA,nrow=n,ncol=d)
   x = matrix(runif(d*n,-2.5,2.5),nrow=n,ncol=d)
   for (j in c(1:d)){
-    if (j==1) { M[,j] = -x[,j]^2 - mean(-x[,j]^2)}
-    if (j==2) { M[,j] = x[,j]^2 - mean(x[,j]^2)}
-    if (j==3) { M[,j] = x[,j]}
-    if (j==4) { M[,j] = exp(-x[,j])- mean(exp(-x[,j]))}
-    if (j>4 ) { M[,j] = 0}
- }
- for (j in c(1:d)) {
+    if (j==1) { M[,j] = -x[,j]^2 - mean(-x[,j]^2) }
+    if (j==2) { M[,j] = x[,j]^2 - mean(x[,j]^2) }
+    if (j==3) { M[,j] = x[,j] }
+    if (j==4) { M[,j] = exp(-x[,j])- mean(exp(-x[,j])) }
+    if (j>4 ) { M[,j] = 0 }
+  }
+  for (j in c(1:d)) {
     x[,j] = (x[,j]-min(x[,j]))/(max(x[,j])-min(x[,j]))
- }
- M[,1:4]  = scale(M[,1:4])          # rescale the design matrix
- m        = apply(M[,c(1:d)],1,sum) # mean function
- y        = m +  epsilon
- return(list(y=y,x=x,M=M))
+  }
+  M[,1:4]  = scale(M[,1:4])          # rescale the design matrix
+  m        = apply(M[,c(1:d)],1,sum) # mean function
+  y        = m + epsilon
+  return(list(y=y,x=x,M=M))
 }
 
 kernel.smoothing.matrix = function(h, x) {
@@ -51,7 +51,7 @@ local.linear.smoothing.matrix = function(h, x) {
 }
 
 
-plotM = function(y,x,M1,M){
+plotM = function(y,x,M1,M) {
   d   = ncol(M)
   res = y - apply(M1,1,sum)
   par(mfrow=c(1,5))
