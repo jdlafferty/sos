@@ -1,4 +1,4 @@
-\documentclass[12pt]{imsart}
+\documentclass[12pt,pdftex]{imsart}
 \setattribute{infoline}{text}{file: \jobname.tex\ date: \today}
 \def\abstractname{Summary}
 
@@ -13,6 +13,7 @@
 \usepackage{algorithmic}
 \usepackage{fullpage}
 \usepackage{graphicx,url}
+\usepackage{hyperref}
 
 \bibpunct{(}{)}{;}{a}{,}{,}
 
@@ -201,7 +202,11 @@ Formulate this as
 \end{align}
 Without the last nonconvex zero/one constraint, this is a
 second-order cone program (SOCP).  A natural relaxation of this is
-to $z_j, w_j \in[0,1]$.  Can we tighten this approximation
-using a semidefinite relaxation \`a la Lasserre?
+to $z_j, w_j \in[0,1]$.  With the constraint it's a mixed integer
+second-order cone program (MISOCP).  While still a relatively new and
+specialized topic, there is work studying relaxations of MISOCPs
+that parallels the semi-definite hierarchies studied for integer
+quadratic programming.  An overview article is
+\href{http://www.pages.drexel.edu/~us26/Tutorial.pdf}{www.pages.drexel.edu/\~{}us26/Tutorial.pdf}
 
 \end{document}
