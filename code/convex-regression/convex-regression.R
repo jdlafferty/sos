@@ -34,22 +34,23 @@ plot(x, y, main = expression(y == x^4 + 2*x + 3 + epsilon))
 # fitted values: z_1, ..., z_n
 # auxiliary variables: w_1, ... , w_n
 # objective replacement: t
-z.index = seq(1, n)
-w.index = seq(n+1, 2*n)
-t.index = 2*n + 1
+z.index <- seq(1, n)
+w.index <- seq(n+1, 2*n)
+t.index <- 2*n + 1
 
 # Set up the program
 convex.regression <- list(sense = "min")
 
-# Objective: t = sqrt(sum((Y-Z)^2))
+# Objective: t = sqrt(sum((y-z)^2))
 # Note that MSE = (1/n) * (t^2).
 convex.regression$c <- c(rep(0, 2*n), 1)
 
 # Affine constraint 1: auxiliary variables [no cost]
-# z_i - w_i = y_i (that is, w_i = z_i - y_i)
+# z_i + w_i = y_i (that is, w_i = y_i - z_i)
 # for i = 1, ..., n
-A1 <- cBind(Matrix(diag(n)), -Matrix(diag(n)))
-A1 <- cBind(A1, Matrix(0, n, 1)) # unused variable t
+A1 <- cBind(.sparseDiagonal(n), .sparseDiagonal(n))
+# Add zero columns for unused variable t
+A1 <- cBind(A1, Matrix(0, n, 1))
 
 # Affine constraint 2: convexity [n-2 affine inequalities]
 # (x_{i+1}-x_i)*z_{i-1} - (x_{i+1}-x_{i-1})*z_i 
@@ -59,9 +60,8 @@ A1 <- cBind(A1, Matrix(0, n, 1)) # unused variable t
 diag1 <- x[3:n] - x[2:(n-1)]
 diag2 <- x[1:(n-2)] - x[3:n]
 diag3 <- x[2:(n-1)] - x[1:(n-2)]
-A2 <- Matrix(diag(diag1, n-2, n)) + 
-      cBind(Matrix(0, n-2, 1), diag(diag2, n-2, n-1)) +
-      cBind(Matrix(0, n-2, 2), diag(diag3, n-2, n-2))
+A2 <- bandSparse(n-2, n, c(0,1,2), list(diag1, diag2, diag3))
+# Add zero columns for unused variables
 A2 <- cBind(A2, Matrix(0, n-2, n+1))
 
 convex.regression$A <- rBind(A1, A2)
