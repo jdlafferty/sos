@@ -14,7 +14,7 @@
 # - Added two basic examples. [example1() and example2()]
 #
 # Version 1.1: July 26, 2014
-# - Added a sparsity parameter LAMBDA which used in the new objective.
+# - Added a sparsity parameter lambda which used in the new objective.
 # - Added an example with covariates generated from
 #   a correlated Gaussian and with a few sparse components. [example3()]
 #
@@ -22,7 +22,7 @@
 #
 ################################################################################
 
-convexity.pattern.regression <- function (X, y, B = 100, LAMBDA = 100) {
+convexity.pattern.regression <- function (X, y, B = 100, lambda = 100) {
 
   ########################################
   #
@@ -30,9 +30,9 @@ convexity.pattern.regression <- function (X, y, B = 100, LAMBDA = 100) {
   #
   # [Inputs]
   # X: n by p design matrix (covariates)
-  # y: n-vector (outcomes)
+  # y: n-vector (outcomes, centered)
   # B: positive scalar (smoothness parameter)
-  # LAMBDA: positive scalar (sparsity parameter)
+  # lambda: positive scalar (sparsity parameter)
   #
   # [Output]
   # a list consisting of...
@@ -44,6 +44,10 @@ convexity.pattern.regression <- function (X, y, B = 100, LAMBDA = 100) {
   #   $fit: an n by p matrix, each column
   #         is the vector of fitted values 
   #         for each component
+  #   $f: an n by p matrix, values from
+  #       the convex component
+  #   $g: an n by p matrix, values from
+  #       the concave component
   #   $MSE: mean squared error
   #   $r: raw output from Rmosek solver
   #
@@ -74,7 +78,7 @@ convexity.pattern.regression <- function (X, y, B = 100, LAMBDA = 100) {
   }
 
   # [Program variables]
-  # Number of variables: 4np + 2n + 2p
+  # Number of variables: 6np + n + 1
   # "Effective" number of variables: 2np + n + 2p
   # Number of integer variables: 2p
   # For i = 1, ..., n and j = 1, ..., p,
@@ -82,9 +86,9 @@ convexity.pattern.regression <- function (X, y, B = 100, LAMBDA = 100) {
   # (ordering: f_11, f_12, ..., f_1p, f_21, ...)
   # scaled fitted values (auxiliary): u_ij, v_ij
   # pointwise errors (auxiliary): r_i
-  # slopes for convexity: beta_ij, gamma_ij (i up to n-1)
+  # slopes for convexity (auxiliary): beta_ij, gamma_ij (i up to n-1)
   # 0/1 integer variables: z_j, w_j
-  # objective replacement: t
+  # MSE replacement: t
   f.index <- seq(1, n*p) 
   g.index <- last(f.index) + seq(1, n*p) 
   u.index <- last(g.index) + seq(1, n*p) 
@@ -116,7 +120,7 @@ convexity.pattern.regression <- function (X, y, B = 100, LAMBDA = 100) {
 
   # Objective: t = sqrt(sum(y_i - sum(f_ij+g_ij)))^2))
   # Note that MSE = (1/n) * (t^2).
-  convexity.pattern$c <- c(rep(0, last(gamma.index)), rep(LAMBDA, 2*p), 1)
+  convexity.pattern$c <- c(rep(0, last(gamma.index)), rep(lambda, 2*p), 1)
 
   # Affine constraint 1: auxiliary variables [no cost]
   # r_i = y_i - sum_j(f_ij + g_ij)
@@ -154,11 +158,6 @@ convexity.pattern.regression <- function (X, y, B = 100, LAMBDA = 100) {
   	rows.f <- 2*(n-1)*(j-1) + seq(1, n-1)
     rows.g <- 2*(n-1)*(j-1) + (n-1) + seq(1, n-1)
   	# permute the (upper-)diagonal matrices back in order
-  	# (note: we remove the largest beta constraint as we should here.
-  	# diag.beta has an extra 0 just for an inverse permutation
-  	# we do NOT know which i is the largest for each j, so we just
-  	# skip the entry and keep the total number of betas to be n-1
-  	# for each j.)
   	inv.ord <- invPerm(ord)[-ord[n]] # remove the last dummy entry
   	A2[rows.f, f.select.col[[j]]] <- diag.f[, invPerm(ord)]
   	A2[rows.f, beta.select.col[[j]]] <- -diag.beta[, inv.ord]
@@ -296,7 +295,7 @@ convexity.pattern.regression <- function (X, y, B = 100, LAMBDA = 100) {
                r = r))
 }
 
-example1 <- function (n = 100, sigma = 10, B = 100, LAMBDA = 100) {
+example1 <- function (n = 100, sigma = 10, B = 100, lambda = 100) {
 	
   ########################################
   # A sample run with outputs and plots.
@@ -338,7 +337,7 @@ example1 <- function (n = 100, sigma = 10, B = 100, LAMBDA = 100) {
        xlab=expression(x[2]))
        
   # Run the main function and print out the patterns
-  result <- convexity.pattern.regression(X, y, B)
+  result <- convexity.pattern.regression(X, y, B, lambda)
   f1 <- result$f[,1]
   f2 <- result$f[,2]
   g1 <- result$g[,1]
@@ -385,7 +384,7 @@ example1 <- function (n = 100, sigma = 10, B = 100, LAMBDA = 100) {
          pch = c(21, 20, 20, 20, 20))
 }
 
-example2 <- function (n = 100, sigma = 10, B = 800, LAMBDA = 800) {
+example2 <- function (n = 100, sigma = 10, B = 800, lambda = 100) {
   
   ########################################
   # Another sample run with more components.
@@ -418,7 +417,7 @@ example2 <- function (n = 100, sigma = 10, B = 800, LAMBDA = 800) {
   y <- y + rnorm(n, 0, sigma) # Gaussian noise
          
   # Run the main function and print out the patterns
-  result <- convexity.pattern.regression(X, y, B)
+  result <- convexity.pattern.regression(X, y, B, lambda)
   fit <- rowSums(result$fit)
 
   # Sample plot in each component
@@ -450,7 +449,7 @@ example2 <- function (n = 100, sigma = 10, B = 800, LAMBDA = 800) {
          pch = c(21, 20, 20, 20, 20))
 }
 
-example3 <- function (n = 100, sigma = 10, B = 200, LAMBDA = 200) {
+example3 <- function (n = 100, sigma = 10, B = 200, lambda = 20) {
   
   ########################################
   # A sample run with correlated Gaussians
@@ -499,7 +498,7 @@ example3 <- function (n = 100, sigma = 10, B = 200, LAMBDA = 200) {
   y <- y + rnorm(n, 0, sigma) # Gaussian noise
          
   # Run the main function and print out the patterns
-  result <- convexity.pattern.regression(X, y, B)
+  result <- convexity.pattern.regression(X, y, B, lambda)
   fit <- rowSums(result$fit)
 
   # Sample plot in each component
