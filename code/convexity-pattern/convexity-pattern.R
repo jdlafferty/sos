@@ -6,7 +6,7 @@
 # YJ Choe
 # The University of Chicago
 #
-# Version 0.1: July 22, 2014
+# Version 1.0: July 25, 2014
 #
 ########################################
 
@@ -54,36 +54,49 @@ convexity.pattern.regression <- function (X, y, B = 100) {
   # using Rmosek CQP
   #---------------------------------------
 
+  # Helper function: Accessing the last element of a sequence
+  last <- function (x) {
+  	# x is a sequence
+  	return (x[length(x)])
+  }
+
   # [Program variables]
-  # Number of variables: 4*n*p + n + 2*p + 1
-  # "Effective" number of variables: 2*n*p + 2*p + 1
-  # Number of integer variables: 2*p
-  num.vars <- 4*n*p+n+p+p+1
+  # Number of variables: 4np + 2n + 2p
+  # "Effective" number of variables: 2np + n + 2p
+  # Number of integer variables: 2p
   # For i = 1, ..., n and j = 1, ..., p,
   # fitted values: f_ij, g_ij 
   # (ordering: f_11, f_12, ..., f_1p, f_21, ...)
   # scaled fitted values (auxiliary): u_ij, v_ij
   # pointwise errors (auxiliary): r_i
+  # slopes for convexity: beta_ij, gamma_ij (i up to n-1)
   # 0/1 integer variables: z_j, w_j
   # objective replacement: t
-  f.index <- seq(1, n*p) # n*p
-  g.index <- seq(n*p + 1, 2*n*p) # n*p
-  u.index <- seq(2*n*p + 1, 3*n*p) # n*p
-  v.index <- seq(3*n*p + 1, 4*n*p) # n*p
-  r.index <- seq(4*n*p + 1, 4*n*p + n) # n
-  z.index <- seq(4*n*p+n + 1, 4*n*p+n + p) # p 
-  w.index <- seq(4*n*p+n+p + 1, 4*n*p+n+p + p) # p
-  t.index <- 4*n*p+n+p+p + 1 # 1
+  f.index <- seq(1, n*p) 
+  g.index <- last(f.index) + seq(1, n*p) 
+  u.index <- last(g.index) + seq(1, n*p) 
+  v.index <- last(u.index) + seq(1, n*p) 
+  r.index <- last(v.index) + seq(1, n) 
+  beta.index <- last(r.index) + seq(1, (n-1)*p) 
+  gamma.index <- last(beta.index) + seq(1, (n-1)*p)
+  z.index <- last(gamma.index) + seq(1, p) 
+  w.index <- last(z.index) + seq(1, p) 
+  t.index <- last(w.index) + 1 
+  num.vars <- t.index
 
-  # Selecting variables
+  # Helpers: Selecting variables
   # (Think of f_ij as the (i,j)th entry of an n by p matrix.)
   f.select.row <- lapply(1:n, function (i) { seq(i*p-p+1, i*p) })
   f.select.col <- lapply(1:p, function (j) { seq(j, n*p, p) })
-  g.select.row <- lapply(1:n, function (i) { seq(n*p+i*p-p+1, n*p+i*p) })
-  g.select.col <- lapply(1:p, function (j) { seq(n*p+j, 2*n*p, p) })
+  g.select.row <- lapply(1:n, function (i) { last(f.index) + seq(i*p-p+1, i*p) })
+  g.select.col <- lapply(1:p, function (j) { last(f.index) + seq(j, n*p, p) })
+  beta.select.col <- lapply(1:p, function (j) { 
+  	                          last(r.index) + seq(j, (n-1)*p, p) })
+  gamma.select.col <- lapply(1:p, function (j) { 
+  	                          last(beta.index) + seq(j, (n-1)*p, p) })
   # For conic constraint 1:
-  u.select.col <- lapply(1:p, function (j) { seq(2*n*p+j, 3*n*p, p) })
-  v.select.col <- lapply(1:p, function (j) { seq(3*n*p+j, 4*n*p, p) })
+  u.select.col <- lapply(1:p, function (j) { last(g.index) + seq(j, n*p, p) })
+  v.select.col <- lapply(1:p, function (j) { last(u.index) + seq(j, n*p, p) })
 
   # Set up the program
   convexity.pattern <- list(sense = "min")
@@ -98,28 +111,55 @@ convexity.pattern.regression <- function (X, y, B = 100) {
   for (i in 1:n) {
     A1[i, f.select.row[[i]]] <- 1
     A1[i, g.select.row[[i]]] <- 1
-    A1[i, (4*n*p+i)] <- 1
+    A1[i, r.index[i]] <- 1
   }
 
-  # Affine constraint 2: convexity [2*(n-2)*p affine inequalities]
-  # (x_{i+1,j}-x_ij)*f_{i-1,j} - (x_{i+1,j}-x_{i-1,j})*f_ij 
-  # + (x_ij-x_{i-1j})*f_{i+1,j} >= 0
-  # (that is, slope_ij <= slope_{i+1,j})
-  # for i = 2, ..., n-1 and for j = 1, ..., p.
-  # Replace >= with <= for g.
-  A2 <- Matrix(0, nrow = 2*(n-2)*p, ncol = num.vars)
+  # Affine constraint 2: convexity [2*(n-1)*p + 2*(n-2)*p affine inequalities]
+  # In each dimension j = 1, ..., p, for sorted points x_i, 
+  # part 1: (i = 1, ..., n-1)
+  # f_{i+1} - f_i >= beta_i * (x_{i+1} - x_i)
+  # g_{i+1} - g_i <= gamma_i * (x_{i+1} - x_i)
+  # part 2: (i = 1, ..., n-2)
+  # beta_i <= beta_{i+1}
+  # gamma_i >= gamma_{i+1}
+  
+  A2 <- Matrix(0, nrow = 2*(n-1)*p + 2*(n-2)*p, ncol = num.vars)
+  
   for (j in 1:p) {
-    ord <- order(X[1:n,j])
-    x <- X[ord, j] # sorted
-    diag1 <- x[3:n] - x[2:(n-1)]
-    diag2 <- x[1:(n-2)] - x[3:n]
-    diag3 <- x[2:(n-1)] - x[1:(n-2)]
-    convexity <- bandSparse(n-2, n, c(0,1,2), 
-                              list(diag1, diag2, diag3))
-    convexity <- convexity[1:(n-2), invPerm(ord)] # back in order
-    A2[((n-2)*(j-1)+1):((n-2)*j), f.select.col[[j]]] <- convexity
-    concavity <- -convexity
-    A2[((n-2)*(p+j-1)+1):((n-2)*(p+j)), g.select.col[[j]]] <- concavity
+  	# take the ordering (for sorting and putting back in order)
+  	ord <- order(X[, j])
+  	# the following sequence x is sorted
+  	x <- X[ord, j]
+  	
+  	# part 1
+  	diag.f <- bandSparse(n-1, n, c(0, 1), list(rep(-1, n-1), rep(1, n-1)))
+  	diag.g <- diag.f
+  	diag.beta <- cBind(.sparseDiagonal(n-1, x[2:n] - x[1:(n-1)]),
+  	                   Matrix(0, n-1, 1))
+  	diag.gamma <- diag.beta
+  	
+  	rows.f <- 2*(n-1)*(j-1) + seq(1, n-1)
+    rows.g <- 2*(n-1)*(j-1) + (n-1) + seq(1, n-1)
+  	# permute the (upper-)diagonal matrices back in order
+  	# (note: we remove the largest beta constraint as we should here.
+  	# diag.beta has an extra 0 just for an inverse permutation
+  	# we do NOT know which i is the largest for each j, so we just
+  	# skip the entry and keep the total number of betas to be n-1
+  	# for each j.)
+  	inv.ord <- invPerm(ord)[-ord[n]] # remove the last dummy entry
+  	A2[rows.f, f.select.col[[j]]] <- diag.f[, invPerm(ord)]
+  	A2[rows.f, beta.select.col[[j]]] <- -diag.beta[, inv.ord]
+  	A2[rows.g, g.select.col[[j]]] <- diag.g[, invPerm(ord)]
+  	A2[rows.g, gamma.select.col[[j]]] <- -diag.gamma[, inv.ord]
+  	
+  	# part 2
+  	diag2.beta <- bandSparse(n-2, n-1, c(0, 1), list(rep(-1, n-2), rep(1, n-2)))
+  	diag2.gamma <- -diag2.beta
+  	
+  	rows.beta <- 2*(n-1)*p + 2*(n-2)*(j-1) + seq(1, n-2)
+    rows.gamma <- 2*(n-1)*p + 2*(n-2)*(j-1) + (n-2) + seq(1, n-2)
+    A2[rows.beta, beta.select.col[[j]]] <- diag2.beta[, inv.ord]
+    A2[rows.gamma, gamma.select.col[[j]]] <- diag2.gamma[, inv.ord]
   }
 
   # Affine constraint 3: identifiability via centering [2*p equalities]
@@ -134,27 +174,28 @@ convexity.pattern.regression <- function (X, y, B = 100) {
   # where z_j, w_j are 0/1 integers
   A4 <- cBind(.sparseDiagonal(p), .sparseDiagonal(p))
   # Add zero columns for unused variables
-  A4 <- cBind(Matrix(0, nrow = p, ncol = 4*n*p+n), A4,
+  A4 <- cBind(Matrix(0, nrow = p, ncol = last(gamma.index)), A4,
               Matrix(0, nrow = p, ncol = 1))
 
   # Affine constraint 5: scaling the fits f_ij and g_ij
   #                      into the standard quadratic cone [no cost]
   # f_ij = sqrt(n)*B*u_ij
   # g_ij = sqrt(n)*B*v_ij
-  A5 <- Matrix(0, nrow = 2*n*p, ncol = num.vars)
-  A5[1:(2*n*p), 1:(2*n*p)] <- .sparseDiagonal(2*n*p)
-  A5[1:(2*n*p), (2*n*p+1):(4*n*p)] <- -sqrt(n)*B*.sparseDiagonal(2*n*p)
+  num.fits <- 2*n*p
+  A5 <- Matrix(0, nrow = num.fits, ncol = num.vars)
+  A5[, 1:num.fits] <- .sparseDiagonal(num.fits)
+  A5[, (num.fits + 1:num.fits)] <- -sqrt(n)*B*.sparseDiagonal(num.fits)
 
   # Affine constraints combined with bounds
   convexity.pattern$A <- rBind(A1, A2, A3, A4, A5)
   convexity.pattern$bc <- rbind(
     blc = c(y, 
-            rep(0, 2*(n-2)*p), 
+            rep(0, 2*(n-1)*p + 2*(n-2)*p), 
             rep(0, 2*p), 
             rep(0, p), 
             rep(0, 2*n*p)),
     buc = c(y, 
-            rep(Inf, 2*(n-2)*p), 
+            rep(0, 2*(n-1)*p), rep(Inf, 2*(n-2)*p), 
             rep(0, 2*p), 
             rep(1, p), 
             rep(0, 2*n*p))
@@ -163,8 +204,16 @@ convexity.pattern.regression <- function (X, y, B = 100) {
   # Constraints on the program variables
   # Integers are either 0 or 1, other constraints are vacuous
   convexity.pattern$bx <- rbind(
-    blx = c(rep(-Inf, 4*n*p), rep(-Inf, n), rep(0, 2*p), 0),
-    bux = c(rep(Inf, 4*n*p), rep(Inf, n), rep(1, 2*p), Inf)
+    blx = c(rep(-Inf, 4*n*p), # f, g, u, v
+            rep(-Inf, n), # r
+            rep(-Inf, 2*(n-1)*p), # beta, gamma
+            rep(0, 2*p), # z, w
+            0), # t
+    bux = c(rep(Inf, 4*n*p), # f, g, u, v
+            rep(Inf, n), # r
+            rep(Inf, 2*(n-1)*p), # beta, gamma
+            rep(1, 2*p), # z, w
+            Inf) # t
   )
 
   # Conic constraint 1: convexity pattern+smoothness [2*p cones]
@@ -196,7 +245,7 @@ convexity.pattern.regression <- function (X, y, B = 100) {
     program = r$sol$int$prosta
   )
   pattern <- r$sol$int$xx[c(z.index, w.index)]
-  pattern <- sapply(1:p, function(j) {pattern[(2*j-1):(2*j)]})
+  pattern <- sapply(1:p, function(j) { c(pattern[j], pattern[p+j]) })
   colnames(pattern) <- 1:p
   rownames(pattern) <- c("convex", "concave")
   fit <- r$sol$int$xx[c(f.index, g.index)]
@@ -215,8 +264,10 @@ convexity.pattern.regression <- function (X, y, B = 100) {
     ########################################
 
     if (pattern["convex", j]) {
+      # return only f for component j
       return (fit[f.select.col[[j]]])
     } else if (pattern["concave", j]) {
+      # return only g for component j
       return (fit[g.select.col[[j]]])
     } else {
       return (rep(0, n))
@@ -226,6 +277,8 @@ convexity.pattern.regression <- function (X, y, B = 100) {
   return (list(status = status,
                pattern = pattern,
                fit = sapply(1:p, fit.component),
+               f = Matrix(r$sol$int$xx[f.index], ncol = p, byrow = TRUE),
+               g = Matrix(r$sol$int$xx[g.index], ncol = p, byrow = TRUE),
                MSE = MSE,
                r = r))
 }
@@ -268,15 +321,19 @@ example1 <- function (n = 100, sigma = 10, B = 100) {
   epsilon <- rnorm(n, 0, sigma) # Gaussian noise
   y <- y1 + y2 + epsilon
 
-  plot(X[,1], y, 
+  plot(x1, y, 
        main = expression(y == (0.1*x[1]^4 + 2*x[1]) + (-4*x[2]^2 - x[2]) + epsilon), 
        xlab=expression(x[1]))
-  plot(X[,2], y, 
+  plot(x2, y, 
        main = expression(y == (0.1*x[1]^4 + 2*x[1]) + (-4*x[2]^2 - x[2]) + epsilon), 
        xlab=expression(x[2]))
        
   # Run the main function and print out the patterns
   result <- convexity.pattern.regression(X, y, B)
+  f1 <- result$f[,1]
+  f2 <- result$f[,2]
+  g1 <- result$g[,1]
+  g2 <- result$g[,2]
 
   # Sample plot in each component
   m <- matrix(c(1,2,3,3), nrow = 2, ncol = 2, byrow = TRUE)
@@ -286,9 +343,10 @@ example1 <- function (n = 100, sigma = 10, B = 100) {
   par(mar = c(2,4,4,2))
   plot(x1, y, 
        main = "Convexity Pattern Regression (1)", xlab = expression(x[1]))
-  points(x1, result$fit[,1] + result$fit[,2], pch = 20, col = "red")
+  # sort by order of x1 for drawing lines
   ord1 <- order(x1)
-  lines(x1[ord1], result$fit[,1][ord1], lwd = 2, col = "blue")
+  lines(x1[ord1], f1[ord1], lwd = 2, col = "red") # convex comp
+  lines(x1[ord1], g1[ord1], lwd = 2, col = "blue") # concave comp
   mtext(paste(result$status$solution, ", ", result$status$program, sep=""), 
         side = 3, adj = 0)
   mtext(paste("N: ", n, ", MSE: ", result$MSE, sep=""), side = 3, adj = 1)
@@ -297,9 +355,10 @@ example1 <- function (n = 100, sigma = 10, B = 100) {
   par(mar = c(2,4,4,2))
   plot(x2, y, 
        main = "Convexity Pattern Regression (2)", xlab = expression(x[2]))
-  points(x2, result$fit[,1] + result$fit[,2], pch = 20, col = "red")
+  # sort by the order of x2 for drawing lines
   ord2 <- order(x2)
-  lines(x2[ord2], result$fit[,2][ord2], lwd = 2, col = "blue")
+  lines(x2[ord2], f2[ord2], lwd = 2, col = "red") # convex comp
+  lines(x2[ord2], g2[ord2], lwd = 2, col = "blue") # concave comp
   mtext(paste(result$status$solution, ", ", result$status$program, sep=""), 
         side = 3, adj = 0)
   mtext(paste("N: ", n, ", MSE: ", result$MSE, sep=""), side = 3, adj = 1)
@@ -308,9 +367,10 @@ example1 <- function (n = 100, sigma = 10, B = 100) {
   plot(1, type = "n", axes=FALSE, xlab="", ylab="")
   legend("top", inset = 0, 
          c(expression(y == (0.1*x[1]^4 + 2*x[1]) + (-4*x[2]^2 - x[2]) + epsilon), 
-           "Additive fit", "Convex/Concave/Zero Component"), 
+           "Convex component", "Concave component"), 
          col = c("black", "red", "blue"), pch = c(21, 20, 20))
 
+  return (result)
 }
 
 example2 <- function (n = 100, sigma = 10, B = 800) {
@@ -354,14 +414,16 @@ example2 <- function (n = 100, sigma = 10, B = 800) {
   layout(mat = m, heights = c(0.4, 0.2))
   for (j in 1:p) {
     par(mar = c(2,4,4,2))
+    # sort by x_j for drawing lines
+    ord <- order(X[,j])
     plot(X[,j], y, 
          main = sprintf("Convexity Pattern Regression (%d)", j), 
          xlab = expression(x[j]))
-    ord <- order(X[,j])
-    f_j <- sapply(X[,j][ord], f[[j]])
-    lines(X[,j][ord], f_j - mean(f_j), col = "darkgray")
-    points(X[,j], fit, pch = 20, col = "red")
-    lines(X[,j][ord], result$fit[,j][ord], lwd = 2, col = "blue")
+    f_j <- sapply(X[,j], f[[j]])
+    lines(X[,j][ord], (f_j - mean(f_j))[ord], lwd = 2, col = "darkgray")
+    lines(X[,j][ord], result$f[,j][ord], lwd = 2, col = "red")
+    lines(X[,j][ord], result$g[,j][ord], lwd = 2, col = "blue")
+    points(X[,j], fit, pch = 20, col = "purple")
   }
 
   # Legend & Text
@@ -370,8 +432,10 @@ example2 <- function (n = 100, sigma = 10, B = 800) {
           side = 3, adj = 0)
   mtext(paste("N: ", n, ", MSE: ", result$MSE, sep=""), side = 3, adj = 1)
   legend("top", inset = 0, 
-         c("Data", "True component", "Additive fit", 
-           "Fitted Convex/Concave/Zero Component"), 
-         col = c("black", "darkgray", "red", "blue"), pch = c(21, 20, 20, 20))
+         c("Data", "True component", "Convex component", 
+           "Concave component", "Additive fit"), 
+         col = c("black", "darkgray", "red", "blue", "purple"), 
+         pch = c(21, 20, 20, 20, 20))
   
+  return (result)
 }
