@@ -1,4 +1,4 @@
-########################################
+################################################################################
 # 
 # Convexity Pattern Regression
 # 
@@ -6,11 +6,23 @@
 # YJ Choe
 # The University of Chicago
 #
-# Version 1.0: July 25, 2014
+# ------------------------------------------------------------------------------
 #
-########################################
+# Version 1.0: July 25, 2014
+# - A working version of the convexity pattern regression
+#   using Rmosek mixed integer conic quadratic program (CQP).
+# - Added two basic examples. [example1() and example2()]
+#
+# Version 1.1: July 26, 2014
+# - Added a sparsity parameter LAMBDA which used in the new objective.
+# - Added an example with covariates generated from
+#   a correlated Gaussian and with a few sparse components. [example3()]
+#
+# ** Please feel free to improve the code and leave a note here. **
+#
+################################################################################
 
-convexity.pattern.regression <- function (X, y, B = 100) {
+convexity.pattern.regression <- function (X, y, B = 100, LAMBDA = 100) {
 
   ########################################
   #
@@ -20,6 +32,7 @@ convexity.pattern.regression <- function (X, y, B = 100) {
   # X: n by p design matrix (covariates)
   # y: n-vector (outcomes)
   # B: positive scalar (smoothness parameter)
+  # LAMBDA: positive scalar (sparsity parameter)
   #
   # [Output]
   # a list consisting of...
@@ -103,7 +116,7 @@ convexity.pattern.regression <- function (X, y, B = 100) {
 
   # Objective: t = sqrt(sum(y_i - sum(f_ij+g_ij)))^2))
   # Note that MSE = (1/n) * (t^2).
-  convexity.pattern$c <- c(rep(0, t.index-1), 1)
+  convexity.pattern$c <- c(rep(0, last(gamma.index)), rep(LAMBDA, 2*p), 1)
 
   # Affine constraint 1: auxiliary variables [no cost]
   # r_i = y_i - sum_j(f_ij + g_ij)
@@ -283,11 +296,7 @@ convexity.pattern.regression <- function (X, y, B = 100) {
                r = r))
 }
 
-#---------------------------------------
-# Examples
-#---------------------------------------
-
-example1 <- function (n = 100, sigma = 10, B = 100) {
+example1 <- function (n = 100, sigma = 10, B = 100, LAMBDA = 100) {
 	
   ########################################
   # A sample run with outputs and plots.
@@ -334,6 +343,7 @@ example1 <- function (n = 100, sigma = 10, B = 100) {
   f2 <- result$f[,2]
   g1 <- result$g[,1]
   g2 <- result$g[,2]
+  fit <- rowSums(result$fit)
 
   # Sample plot in each component
   m <- matrix(c(1,2,3,3), nrow = 2, ncol = 2, byrow = TRUE)
@@ -345,11 +355,11 @@ example1 <- function (n = 100, sigma = 10, B = 100) {
        main = "Convexity Pattern Regression (1)", xlab = expression(x[1]))
   # sort by order of x1 for drawing lines
   ord1 <- order(x1)
+  true.f <- sapply(x1, f)
+  lines(x1[ord1], (true.f - mean(true.f))[ord1], lwd = 2, col = "darkgray")
   lines(x1[ord1], f1[ord1], lwd = 2, col = "red") # convex comp
   lines(x1[ord1], g1[ord1], lwd = 2, col = "blue") # concave comp
-  mtext(paste(result$status$solution, ", ", result$status$program, sep=""), 
-        side = 3, adj = 0)
-  mtext(paste("N: ", n, ", MSE: ", result$MSE, sep=""), side = 3, adj = 1)
+  points(x1, fit, pch = 20, col = "purple")
 
   # Component 2
   par(mar = c(2,4,4,2))
@@ -357,23 +367,25 @@ example1 <- function (n = 100, sigma = 10, B = 100) {
        main = "Convexity Pattern Regression (2)", xlab = expression(x[2]))
   # sort by the order of x2 for drawing lines
   ord2 <- order(x2)
+  true.g <- sapply(x2, g)
+  lines(x2[ord2], (true.g - mean(true.g))[ord2], lwd = 2, col = "darkgray")
   lines(x2[ord2], f2[ord2], lwd = 2, col = "red") # convex comp
   lines(x2[ord2], g2[ord2], lwd = 2, col = "blue") # concave comp
-  mtext(paste(result$status$solution, ", ", result$status$program, sep=""), 
-        side = 3, adj = 0)
-  mtext(paste("N: ", n, ", MSE: ", result$MSE, sep=""), side = 3, adj = 1)
+  points(x2, fit, pch = 20, col = "purple")
 
-  # Legend
+  # Legend & Text
   plot(1, type = "n", axes=FALSE, xlab="", ylab="")
+  mtext(paste(result$status$solution, ", ", result$status$program, sep=""), 
+          side = 3, adj = 0)
+  mtext(paste("N: ", n, ", MSE: ", result$MSE, sep=""), side = 3, adj = 1)
   legend("top", inset = 0, 
-         c(expression(y == (0.1*x[1]^4 + 2*x[1]) + (-4*x[2]^2 - x[2]) + epsilon), 
-           "Convex component", "Concave component"), 
-         col = c("black", "red", "blue"), pch = c(21, 20, 20))
-
-  return (result)
+         c("Data", "True component", "Convex component", 
+           "Concave component", "Additive fit"), 
+         col = c("black", "darkgray", "red", "blue", "purple"), 
+         pch = c(21, 20, 20, 20, 20))
 }
 
-example2 <- function (n = 100, sigma = 10, B = 800) {
+example2 <- function (n = 100, sigma = 10, B = 800, LAMBDA = 800) {
   
   ########################################
   # Another sample run with more components.
@@ -436,6 +448,86 @@ example2 <- function (n = 100, sigma = 10, B = 800) {
            "Concave component", "Additive fit"), 
          col = c("black", "darkgray", "red", "blue", "purple"), 
          pch = c(21, 20, 20, 20, 20))
-  
-  return (result)
 }
+
+example3 <- function (n = 100, sigma = 10, B = 200, LAMBDA = 200) {
+  
+  ########################################
+  # A sample run with correlated Gaussians
+  # and a few sparse components.
+  ########################################
+
+  # Import Rmosek
+  if (!require("Rmosek")) {
+    stop ("Rmosek not installed.")
+  }
+  
+  if (!require("MASS")) {
+  	stop ("MASS not installed.")
+  }
+
+  # Fix dimension = 7
+  p = 7
+
+  # X: n by p design matrix, y: function values (n-vector)
+  
+  # The covariates are sampled from a 2-D correlated Gaussian 
+  # with mean 0, some random covariance.
+  # the last two dimensions are zero.
+  Sigma.half <- Matrix(runif(p*p, -2, 2), nrow = p)
+  Sigma <- t(Sigma.half) %*% Sigma.half
+  X <- cBind(mvrnorm(n = n, mu = rep(0, p), Sigma = Sigma))
+  # sample again if any value is greater than 10 or less than -10
+  while (max(abs(X)) > 10) {
+  	cat("Re-sampling covariates from a correlated Gaussian...\n")
+  	X <- cBind(mvrnorm(n = n, mu = rep(0, p), Sigma = Sigma))
+  }
+
+  # True components:
+  # Note: Function values for each component are then centered.
+  f <- list()
+  f[[1]] <- function (x) { -0.1*x^4 - 2*x } # concave
+  f[[2]] <- function (x) { 3*x^2 + x } # convex
+  for (j in 3:p) {
+  	f[[j]] <- function (x) { 0 } # zero
+  }
+
+  y <- rowSums(sapply(1:p, function (j) {
+  	                    f_j <- sapply(X[,j], f[[j]])
+  	                    return (f_j - mean(f_j))
+                        })) 
+  y <- y + rnorm(n, 0, sigma) # Gaussian noise
+         
+  # Run the main function and print out the patterns
+  result <- convexity.pattern.regression(X, y, B)
+  fit <- rowSums(result$fit)
+
+  # Sample plot in each component
+  m <- matrix(c(1:p, rep(p+1, p)), nrow = 2, ncol = p, byrow = TRUE)
+  layout(mat = m, heights = c(0.4, 0.25))
+  for (j in 1:p) {
+    par(mar = c(2,4,4,2))
+    # sort by x_j for drawing lines
+    ord <- order(X[,j])
+    plot(X[,j], y, 
+         main = sprintf("(%d)", j), 
+         xlab = expression(x[j]))
+    f_j <- sapply(X[,j], f[[j]])
+    lines(X[,j][ord], (f_j - mean(f_j))[ord], lwd = 2, col = "darkgray")
+    lines(X[,j][ord], result$f[,j][ord], lwd = 2, col = "red")
+    lines(X[,j][ord], result$g[,j][ord], lwd = 2, col = "blue")
+    points(X[,j], fit, pch = 20, col = "purple")
+  }
+
+  # Legend & Text
+  plot(1, type = "n", axes=FALSE, xlab="", ylab="")
+  mtext(paste(result$status$solution, ", ", result$status$program, sep=""), 
+          side = 3, adj = 0)
+  mtext(paste("N: ", n, ", MSE: ", result$MSE, sep=""), side = 3, adj = 1)
+  legend("top",  
+         c("Data", "True component", "Convex component", 
+           "Concave component", "Additive fit"), 
+         col = c("black", "darkgray", "red", "blue", "purple"), 
+         pch = c(21, 20, 20, 20, 20))
+}
+
