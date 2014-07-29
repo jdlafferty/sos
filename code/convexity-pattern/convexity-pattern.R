@@ -313,12 +313,12 @@ example1 <- function (n = 100, sigma = 10, B = 100, lambda = 100) {
   # True convex component: f(x) = 0.1*x^4 + 2x
   # True concave component: g(x) = -4*x^2 - x
   # Function values for each component are then centered.
-  f <- function (x) { 0.1*x^4 + 2*x }
-  g <- function (x) { -4*x^2 - x }
+  f <- function (x) { 2*x^2 + x }
+  g <- function (x) { -2*x^4 - x }
 
   # X: n by p design matrix, y: function values (n-vector)
-  x1 <- runif(n, -5, 5)
-  x2 <- runif(n, -5, 5)
+  x1 <- runif(n, -1, 1)
+  x2 <- runif(n, -1, 1)
   X <- Matrix(c(x1, x2), nrow=n) 
 
   y1 <- sapply(x1, f)
@@ -329,13 +329,6 @@ example1 <- function (n = 100, sigma = 10, B = 100, lambda = 100) {
   epsilon <- rnorm(n, 0, sigma) # Gaussian noise
   y <- y1 + y2 + epsilon
 
-  plot(x1, y, 
-       main = expression(y == (0.1*x[1]^4 + 2*x[1]) + (-4*x[2]^2 - x[2]) + epsilon), 
-       xlab=expression(x[1]))
-  plot(x2, y, 
-       main = expression(y == (0.1*x[1]^4 + 2*x[1]) + (-4*x[2]^2 - x[2]) + epsilon), 
-       xlab=expression(x[2]))
-       
   # Run the main function and print out the patterns
   result <- convexity.pattern.regression(X, y, B, lambda)
   f1 <- result$f[,1]
@@ -355,7 +348,7 @@ example1 <- function (n = 100, sigma = 10, B = 100, lambda = 100) {
   # sort by order of x1 for drawing lines
   ord1 <- order(x1)
   true.f <- sapply(x1, f)
-  lines(x1[ord1], (true.f - mean(true.f))[ord1], lwd = 2, col = "darkgray")
+  lines(x1[ord1], (true.f - mean(true.f))[ord1], lwd = 5, col = "darkgray")
   lines(x1[ord1], f1[ord1], lwd = 2, col = "red") # convex comp
   lines(x1[ord1], g1[ord1], lwd = 2, col = "blue") # concave comp
   points(x1, fit, pch = 20, col = "purple")
@@ -367,7 +360,7 @@ example1 <- function (n = 100, sigma = 10, B = 100, lambda = 100) {
   # sort by the order of x2 for drawing lines
   ord2 <- order(x2)
   true.g <- sapply(x2, g)
-  lines(x2[ord2], (true.g - mean(true.g))[ord2], lwd = 2, col = "darkgray")
+  lines(x2[ord2], (true.g - mean(true.g))[ord2], lwd = 5, col = "darkgray")
   lines(x2[ord2], f2[ord2], lwd = 2, col = "red") # convex comp
   lines(x2[ord2], g2[ord2], lwd = 2, col = "blue") # concave comp
   points(x2, fit, pch = 20, col = "purple")
@@ -384,7 +377,7 @@ example1 <- function (n = 100, sigma = 10, B = 100, lambda = 100) {
          pch = c(21, 20, 20, 20, 20))
 }
 
-example2 <- function (n = 100, sigma = 10, B = 800, lambda = 100) {
+example2 <- function (n = 100, sigma = 1, B = 200, lambda = 1) {
   
   ########################################
   # Another sample run with more components.
@@ -401,14 +394,23 @@ example2 <- function (n = 100, sigma = 10, B = 800, lambda = 100) {
   # True components (domain [-5, 5]):
   # Note: Function values for each component are then centered.
   f <- list()
-  f[[1]] <- function (x) { -2*x^2 - 10*x } # concave
-  f[[2]] <- function (x) { 0.0005*x^8 - 0.0028*x^5 + 0.014*x^2 } # convex
-  f[[3]] <- function (x) { 5 * (x-20) * log(0.1*(x+6.1)) } # convex
-  f[[4]] <- function (x) { 0 } # zero
-  f[[5]] <- function (x) { -60 * exp(0.05*x^2 - 0.1*x) } # concave
+  pattern = list()
+  
+  f[[1]] <- function (x) { -1*x^2 - 10*x } # concave
+  f[[2]] <- function (x) { 2*x^4 - 2*x } # convex
+  f[[3]] <- function (x) { 5 * (x-20) * log(3*(x+6.1)) } # convex
+  f[[4]] <- function (x) { -60 * exp(0.05*x^2 - 0.1*x) } # concave
+  f[[5]] <- function (x) { 0 } # zero
 
+  pattern[[1]] = c(0,1)
+  pattern[[2]] = c(1,0)
+  pattern[[3]] = c(1,0)
+  pattern[[4]] = c(0,1)
+  pattern[[5]] = c(0,0)
+
+  
   # X: n by p design matrix, y: function values (n-vector)
-  X <- Matrix(runif(n*p, -5, 5), nrow=n) 
+  X <- Matrix(runif(n*p, -1, 1), nrow=n) 
 
   y <- rowSums(sapply(1:p, function (j) {
   	                    f_j <- sapply(X[,j], f[[j]])
@@ -418,6 +420,12 @@ example2 <- function (n = 100, sigma = 10, B = 800, lambda = 100) {
          
   # Run the main function and print out the patterns
   result <- convexity.pattern.regression(X, y, B, lambda)
+
+  true.pattern = sapply(1:p, function(j) { pattern[[j]] })
+  colnames(true.pattern) <- 1:p
+  rownames(true.pattern) <- c("convex", "concave")
+  print(list(true.pattern=true.pattern))
+               
   fit <- rowSums(result$fit)
 
   # Sample plot in each component
@@ -431,7 +439,7 @@ example2 <- function (n = 100, sigma = 10, B = 800, lambda = 100) {
          main = sprintf("Convexity Pattern Regression (%d)", j), 
          xlab = expression(x[j]))
     f_j <- sapply(X[,j], f[[j]])
-    lines(X[,j][ord], (f_j - mean(f_j))[ord], lwd = 2, col = "darkgray")
+    lines(X[,j][ord], (f_j - mean(f_j))[ord], lwd = 5, col = "darkgray")
     lines(X[,j][ord], result$f[,j][ord], lwd = 2, col = "red")
     lines(X[,j][ord], result$g[,j][ord], lwd = 2, col = "blue")
     points(X[,j], fit, pch = 20, col = "purple")
@@ -466,7 +474,7 @@ example3 <- function (n = 100, sigma = 10, B = 200, lambda = 20) {
   }
 
   # Fix dimension = 7
-  p = 7
+  p = 8
 
   # X: n by p design matrix, y: function values (n-vector)
   
@@ -502,7 +510,7 @@ example3 <- function (n = 100, sigma = 10, B = 200, lambda = 20) {
   fit <- rowSums(result$fit)
 
   # Sample plot in each component
-  m <- matrix(c(1:p, rep(p+1, p)), nrow = 2, ncol = p, byrow = TRUE)
+  m <- matrix(c(1:p, rep(p+1, p)), nrow = 2, ncol = ceiling(p/2), byrow = TRUE)
   layout(mat = m, heights = c(0.4, 0.25))
   for (j in 1:p) {
     par(mar = c(2,4,4,2))
@@ -519,14 +527,14 @@ example3 <- function (n = 100, sigma = 10, B = 200, lambda = 20) {
   }
 
   # Legend & Text
-  plot(1, type = "n", axes=FALSE, xlab="", ylab="")
-  mtext(paste(result$status$solution, ", ", result$status$program, sep=""), 
-          side = 3, adj = 0)
-  mtext(paste("N: ", n, ", MSE: ", result$MSE, sep=""), side = 3, adj = 1)
-  legend("top",  
-         c("Data", "True component", "Convex component", 
-           "Concave component", "Additive fit"), 
-         col = c("black", "darkgray", "red", "blue", "purple"), 
-         pch = c(21, 20, 20, 20, 20))
+  #plot(1, type = "n", axes=FALSE, xlab="", ylab="")
+  #mtext(paste(result$status$solution, ", ", result$status$program, sep=""), 
+  #        side = 3, adj = 0)
+  #mtext(paste("N: ", n, ", MSE: ", result$MSE, sep=""), side = 3, adj = 1)
+  #legend("top",  
+  #       c("Data", "True component", "Convex component", 
+  #         "Concave component", "Additive fit"), 
+  #       col = c("black", "darkgray", "red", "blue", "purple"), 
+  #       pch = c(21, 20, 20, 20, 20))
 }
 
