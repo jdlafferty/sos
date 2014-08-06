@@ -1,6 +1,6 @@
 ################################################################################
 # 
-# 1-D Convexity Pattern Regression: Convex Program Formulation
+# 1-D Convexity Pattern Regression as a Convex Program
 # (using Sabyasachi's new lasso-like idea)
 # 
 # Professor John Lafferty's Group
@@ -17,6 +17,16 @@
 #   In particular, we don't have any integer variables here.
 #   In practice, the output is very sensitive to the choice of lambda,
 #   which we think a simple algorithm can "automatically" choose. 
+#
+# Version 1.1: August 5, 2014
+# - Added a wrapper function that chooses lambda automatically.
+#   The behavior is not always stable, however, and it occasionally fails.
+#   This is likely due to the fact that the original convex program does not
+#   always seem to find the optimal solution. 
+# - Note that this is possible only due to the conjectured lasso-like behavior
+#   of the difference in subgradients: we start from lambda = 0, and
+#   increase lambda until the other component becomes nontrivial. We then
+#   take the fit from the previous iteration.
 # 
 # ** Please feel free to improve the code and leave a note here. **
 #
@@ -32,8 +42,7 @@ convexity.pattern.cvx.1d = function (x, y, lambda = 1) {
   # [Inputs]
   # x: n-vector (covariates)
   # y: n-vector (SCALED outcomes)
-  # B: positive scalar (smoothness parameter)
-  # lambda: positive scalar (sparsity parameter)
+  # lambda: positive scalar (sparsity&smoothness parameter)
   #
   # [Output]
   # a list consisting of...
@@ -154,14 +163,18 @@ convexity.pattern.cvx.1d = function (x, y, lambda = 1) {
   A2[rows.beta, beta.index] = diag2.beta
   A2[rows.gamma, gamma.index] = diag2.gamma
 
-  # Affine constraint 3: identifiability via centering [2 equalities]
-
+  # Affine constraint 3: identifiability constraints [4 equalities]
+  # We want the fitted values of each component to be centered
+  # and also orthogonal to the data vector x. (inner product = 0)
+  
   # number of rows (affine contraints)
-  n3 = 2
+  n3 = 4
 
   A3 = Matrix(0, nrow = n3, ncol = num.vars)
   A3[1, f.index] = 1
   A3[2, g.index] = 1
+  A3[3, f.index] = x
+  A3[4, g.index] = x
 
   # Affine constraint 4: choice of pattern [1 inequality]
   # 0 <= (beta_{n-1} - beta_1) - (gamma_{n-1} - gamma_1) <= lambda
@@ -222,11 +235,11 @@ convexity.pattern.cvx.1d = function (x, y, lambda = 1) {
   )
 
   # helper: check if the fit is "essentially" zero
-  is.zero = function (fit, tol = 1e-2) {
-  	return (max(abs(fit)) < tol)
+  is.zero = function (fit, tol = 1e-4) {
+  	return (max(abs(fit)) < n*tol)
   }
   # helper: returns the pattern matrix
-  get.pattern = function(f, g, tol = 1e-2) {
+  get.pattern = function(f, g) {
   	p = matrix(as.integer(c(!is.zero(f), !is.zero(g))), nrow = 2)
   	rownames(p) = c("convex", "concave")
   	colnames(p) = c("pattern")
@@ -254,7 +267,7 @@ convexity.pattern.cvx.1d = function (x, y, lambda = 1) {
                r = r))
 }
 
-example.1d = function (n = 100, sigma = 1, lambda = 2, tol = 1e-4) {
+example.1d = function (n = 100, sigma = 1, lambda = 2) {
 
   ########################################
   # Testing the univariate convexity
@@ -265,6 +278,10 @@ example.1d = function (n = 100, sigma = 1, lambda = 2, tol = 1e-4) {
   # True convex function: f(x) = x^4 + 2x (then scaled)
   f = function (x) { x^4 + 2*x }
   x = runif(n, -5, 5)
+  # Resample if any two points are too close.
+  while (min(dist(x)) < 1e-6) {
+  	x = runif(n, -5, 5)
+  }
   epsilon = rnorm(n, 0, sigma) # Gaussian noise
   f.val = scale(f(x))
   y = f.val + epsilon
@@ -285,3 +302,87 @@ example.1d = function (n = 100, sigma = 1, lambda = 2, tol = 1e-4) {
   print(list(pattern = result$pattern))
 }
 
+convexity.pattern.cvx.1d.auto = function (x, y, step = 0.1, max.step = 100) {
+	
+  ########################################
+  #
+  # This function chooses 'lambda' automatically
+  # by repeated calls to convexity.pattern.cvx.1d.
+  #
+  # Note that 'step' is simply the desired accuracy
+  # of the lambda parameter. 'max.step' is essentially
+  # any large integer. 
+  #
+  # [Inputs]
+  # x: n-vector (covariates)
+  # y: n-vector (SCALED outcomes)
+  # step: desired accuracy of lambda
+  # max.step: maximum number of iterations
+  #
+  # [Output]
+  # a list consisting of...
+  #   $lambda: the optimal lambda
+  #   $status: program and solution statuses
+  #            as given by Rmosek
+  #   $pattern: a Boolean pair indicating
+  #             whether each component is active
+  #             (convex, concave)
+  #   $fit: an n-vector from the component
+  #   $f: an n-vector from the convex component
+  #   $g: an n-vector from the concave component
+  #   $MSE: mean squared error
+  #   $r: raw output from Rmosek solver
+  #
+  ########################################
+  
+  # iterate until the best fit with exactly one component active
+  # (i.e. stop right before both components are active)
+  result = convexity.pattern.cvx.1d(x, y, 0)
+  for (lambda in step * seq(1, max.step)) {
+  	cat(sprintf("Testing lambda = %.1f...\n", lambda))
+  	new.result = convexity.pattern.cvx.1d(x, y, lambda)
+  	# both patterns active: c(1, 1)
+  	if (all(new.result$pattern == c(1, 1))) {
+  		break
+  	}
+  	result = new.result
+  }
+  
+  result$lambda = lambda
+  return (result)
+}
+
+example.1d.auto = function (n = 100, sigma = 1, step = 0.1, max.step = 100) {
+
+  ########################################
+  # Testing the univariate convexity
+  # pattern regression function.
+  ########################################
+
+  # Generate Synthetic Data
+  # True convex function: f(x) = x^4 + 2x (then scaled)
+  f = function (x) { x^4 + 2*x }
+  x = runif(n, -5, 5)
+  # Resample if any two points are too close.
+  while (min(dist(x)) < 1e-6) {
+  	x = runif(n, -5, 5)
+  }
+  epsilon = rnorm(n, 0, sigma) # Gaussian noise
+  f.val = scale(f(x))
+  y = f.val + epsilon
+  
+  result = convexity.pattern.cvx.1d.auto(x, y, step, max.step)
+  
+  plot(x, y, main = "1-D Convexity Pattern Regression as a Convex Program")
+  ord = order(x)
+  lines(x[ord], f.val[ord], lwd = 2, col = "darkgray")
+  lines(x[ord], result$f[ord], lwd = 2, col = "red")
+  lines(x[ord], result$g[ord], lwd = 2, col = "blue")
+  points(x, result$fit, pch = 20, col = "purple")
+  mtext(paste(result$status$solution, ", ", result$status$program, sep=""), 
+        side = 3, adj = 0)
+  mtext(sprintf("N: %d, optimal lambda: %.1f, MSE: %.2f", 
+                n, result$lambda, result$MSE), side = 3, adj = 1)
+  
+  print(list(pattern = result$pattern))
+}
