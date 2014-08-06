@@ -22,7 +22,7 @@
 #
 ################################################################################
 
-convexity.pattern.regression <- function (X, y, B = 100, lambda = 100) {
+convexity.pattern.regression = function (X, y, B = 100, lambda = 1) {
 
   ########################################
   #
@@ -63,8 +63,8 @@ convexity.pattern.regression <- function (X, y, B = 100, lambda = 100) {
   }
   
   # Program size
-  n = dim(X)[1] # number of points
-  p = dim(X)[2] # dimension
+  n = nrow(X) # number of points
+  p = ncol(X) # dimension
 
   #---------------------------------------
   # Mixed Integer (0/1) SOCP
@@ -72,7 +72,7 @@ convexity.pattern.regression <- function (X, y, B = 100, lambda = 100) {
   #---------------------------------------
 
   # Helper function: Accessing the last element of a sequence
-  last <- function (x) {
+  last = function (x) {
   	# x is a sequence
   	return (x[length(x)])
   }
@@ -89,184 +89,204 @@ convexity.pattern.regression <- function (X, y, B = 100, lambda = 100) {
   # slopes for convexity (auxiliary): beta_ij, gamma_ij (i up to n-1)
   # 0/1 integer variables: z_j, w_j
   # MSE replacement: t
-  f.index <- seq(1, n*p) 
-  g.index <- last(f.index) + seq(1, n*p) 
-  u.index <- last(g.index) + seq(1, n*p) 
-  v.index <- last(u.index) + seq(1, n*p) 
-  r.index <- last(v.index) + seq(1, n) 
-  beta.index <- last(r.index) + seq(1, (n-1)*p) 
-  gamma.index <- last(beta.index) + seq(1, (n-1)*p)
-  z.index <- last(gamma.index) + seq(1, p) 
-  w.index <- last(z.index) + seq(1, p) 
-  t.index <- last(w.index) + 1 
-  num.vars <- t.index
+  f.index = seq(1, n*p) 
+  g.index = last(f.index) + seq(1, n*p) 
+  u.index = last(g.index) + seq(1, n*p) 
+  v.index = last(u.index) + seq(1, n*p) 
+  r.index = last(v.index) + seq(1, n) 
+  beta.index = last(r.index) + seq(1, (n-1)*p) 
+  gamma.index = last(beta.index) + seq(1, (n-1)*p)
+  z.index = last(gamma.index) + seq(1, p) 
+  w.index = last(z.index) + seq(1, p) 
+  t.index = last(w.index) + 1 
+  num.vars = t.index
 
   # Helpers: Selecting variables
   # (Think of f_ij as the (i,j)th entry of an n by p matrix.)
-  f.select.row <- lapply(1:n, function (i) { seq(i*p-p+1, i*p) })
-  f.select.col <- lapply(1:p, function (j) { seq(j, n*p, p) })
-  g.select.row <- lapply(1:n, function (i) { last(f.index) + seq(i*p-p+1, i*p) })
-  g.select.col <- lapply(1:p, function (j) { last(f.index) + seq(j, n*p, p) })
-  beta.select.col <- lapply(1:p, function (j) { 
+  f.select.row = lapply(1:n, function (i) { seq(i*p-p+1, i*p) })
+  f.select.col = lapply(1:p, function (j) { seq(j, n*p, p) })
+  g.select.row = lapply(1:n, function (i) { last(f.index) + seq(i*p-p+1, i*p) })
+  g.select.col = lapply(1:p, function (j) { last(f.index) + seq(j, n*p, p) })
+  beta.select.col = lapply(1:p, function (j) { 
   	                          last(r.index) + seq(j, (n-1)*p, p) })
-  gamma.select.col <- lapply(1:p, function (j) { 
+  gamma.select.col = lapply(1:p, function (j) { 
   	                          last(beta.index) + seq(j, (n-1)*p, p) })
   # For conic constraint 1:
-  u.select.col <- lapply(1:p, function (j) { last(g.index) + seq(j, n*p, p) })
-  v.select.col <- lapply(1:p, function (j) { last(u.index) + seq(j, n*p, p) })
+  u.select.col = lapply(1:p, function (j) { last(g.index) + seq(j, n*p, p) })
+  v.select.col = lapply(1:p, function (j) { last(u.index) + seq(j, n*p, p) })
 
   # Set up the program
-  convexity.pattern <- list(sense = "min")
+  convexity.pattern = list(sense = "min")
 
   # Objective: t = sqrt(sum(y_i - sum(f_ij+g_ij)))^2))
   # Note that MSE = (1/n) * (t^2).
-  convexity.pattern$c <- c(rep(0, last(gamma.index)), rep(lambda, 2*p), 1)
+  convexity.pattern$c = c(rep(0, last(gamma.index)), rep(lambda, 2*p), 1)
 
   # Affine constraint 1: auxiliary variables [no cost]
   # r_i = y_i - sum_j(f_ij + g_ij)
-  A1 <- Matrix(0, nrow = n, ncol = num.vars)
+  
+  # number of rows (affine contraints)
+  n1 = n
+  
+  A1 = Matrix(0, nrow = n1, ncol = num.vars)
   for (i in 1:n) {
-    A1[i, f.select.row[[i]]] <- 1
-    A1[i, g.select.row[[i]]] <- 1
-    A1[i, r.index[i]] <- 1
+    A1[i, f.select.row[[i]]] = 1
+    A1[i, g.select.row[[i]]] = 1
+    A1[i, r.index[i]] = 1
   }
 
   # Affine constraint 2: convexity [2*(n-1)*p + 2*(n-2)*p affine inequalities]
   # In each dimension j = 1, ..., p, for sorted points x_i, 
   # part 1: (i = 1, ..., n-1)
-  # f_{i+1} - f_i >= beta_i * (x_{i+1} - x_i)
-  # g_{i+1} - g_i <= gamma_i * (x_{i+1} - x_i)
+  # f_{i+1} - f_i = beta_i * (x_{i+1} - x_i)
+  # g_{i+1} - g_i = gamma_i * (x_{i+1} - x_i)
   # part 2: (i = 1, ..., n-2)
   # beta_i <= beta_{i+1}
   # gamma_i >= gamma_{i+1}
   
-  A2 <- Matrix(0, nrow = 2*(n-1)*p + 2*(n-2)*p, ncol = num.vars)
+  # number of rows (affine contraints)
+  n2.part1 = 2*(n-1)*p  
+  n2.part2 = 2*(n-2)*p
+  n2 = n2.part1 + n2.part2
+  
+  A2 = Matrix(0, nrow = n2, ncol = num.vars)
   
   for (j in 1:p) {
   	# take the ordering (for sorting and putting back in order)
-  	ord <- order(X[, j])
+  	ord = order(X[, j])
   	# the following sequence x is sorted
-  	x <- X[ord, j]
+  	x = X[ord, j]
   	
   	# part 1
-  	diag.f <- bandSparse(n-1, n, c(0, 1), list(rep(-1, n-1), rep(1, n-1)))
-  	diag.g <- diag.f
-  	diag.beta <- cBind(.sparseDiagonal(n-1, x[2:n] - x[1:(n-1)]),
+  	diag.f = bandSparse(n-1, n, c(0, 1), list(rep(-1, n-1), rep(1, n-1)))
+  	diag.g = diag.f
+  	diag.beta = cBind(.sparseDiagonal(n-1, x[2:n] - x[1:(n-1)]),
   	                   Matrix(0, n-1, 1))
-  	diag.gamma <- diag.beta
+  	diag.gamma = diag.beta
   	
-  	rows.f <- 2*(n-1)*(j-1) + seq(1, n-1)
-    rows.g <- 2*(n-1)*(j-1) + (n-1) + seq(1, n-1)
+  	rows.f = 2*(n-1)*(j-1) + seq(1, n-1)
+    rows.g = 2*(n-1)*(j-1) + (n-1) + seq(1, n-1)
   	# permute the (upper-)diagonal matrices back in order
-  	inv.ord <- invPerm(ord)[-ord[n]] # remove the last dummy entry
-  	A2[rows.f, f.select.col[[j]]] <- diag.f[, invPerm(ord)]
-  	A2[rows.f, beta.select.col[[j]]] <- -diag.beta[, inv.ord]
-  	A2[rows.g, g.select.col[[j]]] <- diag.g[, invPerm(ord)]
-  	A2[rows.g, gamma.select.col[[j]]] <- -diag.gamma[, inv.ord]
+  	inv.ord = invPerm(ord)[-ord[n]] # remove the last dummy entry
+  	A2[rows.f, f.select.col[[j]]] = diag.f[, invPerm(ord)]
+  	A2[rows.f, beta.select.col[[j]]] = -diag.beta[, inv.ord]
+  	A2[rows.g, g.select.col[[j]]] = diag.g[, invPerm(ord)]
+  	A2[rows.g, gamma.select.col[[j]]] = -diag.gamma[, inv.ord]
   	
   	# part 2
-  	diag2.beta <- bandSparse(n-2, n-1, c(0, 1), list(rep(-1, n-2), rep(1, n-2)))
-  	diag2.gamma <- -diag2.beta
+  	diag2.beta = bandSparse(n-2, n-1, c(0, 1), list(rep(-1, n-2), rep(1, n-2)))
+  	diag2.gamma = -diag2.beta
   	
-  	rows.beta <- 2*(n-1)*p + 2*(n-2)*(j-1) + seq(1, n-2)
-    rows.gamma <- 2*(n-1)*p + 2*(n-2)*(j-1) + (n-2) + seq(1, n-2)
-    A2[rows.beta, beta.select.col[[j]]] <- diag2.beta[, inv.ord]
-    A2[rows.gamma, gamma.select.col[[j]]] <- diag2.gamma[, inv.ord]
+  	rows.beta = 2*(n-1)*p + 2*(n-2)*(j-1) + seq(1, n-2)
+    rows.gamma = 2*(n-1)*p + 2*(n-2)*(j-1) + (n-2) + seq(1, n-2)
+    A2[rows.beta, beta.select.col[[j]]] = diag2.beta[, inv.ord]
+    A2[rows.gamma, gamma.select.col[[j]]] = diag2.gamma[, inv.ord]
   }
 
   # Affine constraint 3: identifiability via centering [2*p equalities]
-  A3 <- Matrix(0, nrow = 2*p, ncol = num.vars)
+
+  # number of rows (affine contraints)
+  n3 = 2*p  
+
+  A3 = Matrix(0, nrow = n3, ncol = num.vars)
   for (j in 1:p) {
-    A3[j, f.select.col[[j]]] <- 1
-    A3[p+j, g.select.col[[j]]] <- 1
+    A3[j, f.select.col[[j]]] = 1
+    A3[p+j, g.select.col[[j]]] = 1
   }
 
   # Affine constraint 4: choice of pattern [p integer inequalities]
   # 0 <= z_j + w_j <= 1, 
   # where z_j, w_j are 0/1 integers
-  A4 <- cBind(.sparseDiagonal(p), .sparseDiagonal(p))
+  
+  # number of rows (affine contraints)
+  n4 = p
+  
+  A4 = cBind(.sparseDiagonal(p), .sparseDiagonal(p))
   # Add zero columns for unused variables
-  A4 <- cBind(Matrix(0, nrow = p, ncol = last(gamma.index)), A4,
-              Matrix(0, nrow = p, ncol = 1))
+  A4 = cBind(Matrix(0, nrow = n4, ncol = last(gamma.index)), A4,
+              Matrix(0, nrow = n4, ncol = 1))
 
   # Affine constraint 5: scaling the fits f_ij and g_ij
   #                      into the standard quadratic cone [no cost]
   # f_ij = sqrt(n)*B*u_ij
   # g_ij = sqrt(n)*B*v_ij
-  num.fits <- 2*n*p
-  A5 <- Matrix(0, nrow = num.fits, ncol = num.vars)
-  A5[, 1:num.fits] <- .sparseDiagonal(num.fits)
-  A5[, (num.fits + 1:num.fits)] <- -sqrt(n)*B*.sparseDiagonal(num.fits)
+
+  # number of rows (affine contraints)
+  n5 = 2*n*p
+
+  A5 = Matrix(0, nrow = n5, ncol = num.vars)
+  A5[, 1:n5] = .sparseDiagonal(n5)
+  A5[, (n5 + 1:n5)] = -sqrt(n)*B*.sparseDiagonal(n5)
 
   # Affine constraints combined with bounds
-  convexity.pattern$A <- rBind(A1, A2, A3, A4, A5)
-  convexity.pattern$bc <- rbind(
+  convexity.pattern$A = rBind(A1, A2, A3, A4, A5)
+  convexity.pattern$bc = rbind(
     blc = c(y, 
-            rep(0, 2*(n-1)*p + 2*(n-2)*p), 
-            rep(0, 2*p), 
-            rep(0, p), 
-            rep(0, 2*n*p)),
+            rep(0, n2.part1), rep(0, n2.part2), 
+            rep(0, n3), 
+            rep(0, n4), 
+            rep(0, n5)),
     buc = c(y, 
-            rep(0, 2*(n-1)*p), rep(Inf, 2*(n-2)*p), 
-            rep(0, 2*p), 
-            rep(1, p), 
-            rep(0, 2*n*p))
+            rep(0, n2.part1), rep(Inf, n2.part2), 
+            rep(0, n3), 
+            rep(1, n4), 
+            rep(0, n5))
   )
 
   # Constraints on the program variables
   # Integers are either 0 or 1, other constraints are vacuous
-  convexity.pattern$bx <- rbind(
-    blx = c(rep(-Inf, 4*n*p), # f, g, u, v
-            rep(-Inf, n), # r
-            rep(-Inf, 2*(n-1)*p), # beta, gamma
-            rep(0, 2*p), # z, w
+  convexity.pattern$bx = rbind(
+    blx = c(rep(-Inf, length(c(f.index, g.index, u.index, v.index))),
+            rep(-Inf, length(r.index)),
+            rep(-Inf, length(c(beta.index, gamma.index))),
+            rep(0, length(c(z.index, w.index))), 
             0), # t
-    bux = c(rep(Inf, 4*n*p), # f, g, u, v
-            rep(Inf, n), # r
-            rep(Inf, 2*(n-1)*p), # beta, gamma
-            rep(1, 2*p), # z, w
+    bux = c(rep(Inf, length(c(f.index, g.index, u.index, v.index))),
+            rep(Inf, length(r.index)),
+            rep(Inf, length(c(beta.index, gamma.index))),
+            rep(1, length(c(z.index, w.index))), 
             Inf) # t
   )
 
   # Conic constraint 1: convexity pattern+smoothness [2*p cones]
-  cone.f <- sapply(1:p, 
+  cone.f = sapply(1:p, 
     function (j) { list("QUAD", c(z.index[j], u.select.col[[j]])) }
   )
-  cone.g <- sapply(1:p, 
+  cone.g = sapply(1:p, 
     function (j) { list("QUAD", c(w.index[j], v.select.col[[j]])) }
   )
   # Conic constraint 2: quadratic objective (mean squared error)
-  cone.obj <- cbind(list("QUAD", c(t.index, r.index)))
+  cone.obj = cbind(list("QUAD", c(t.index, r.index)))
 
   # Combined
-  convexity.pattern$cones <- cbind(cone.f, cone.g, cone.obj)
+  convexity.pattern$cones = cbind(cone.f, cone.g, cone.obj)
 
   # Specify integer variables: z_j and w_j
-  convexity.pattern$intsub <- c(z.index, w.index)
+  convexity.pattern$intsub = c(z.index, w.index)
 
   # Solve the program using Rmosek!
-  r <- mosek(convexity.pattern)
+  r = mosek(convexity.pattern)
 
   #---------------------------------------
   # Results
   #---------------------------------------
 
   # Outputs
-  status <- list(
+  status = list(
     solution = r$sol$int$solsta, 
     program = r$sol$int$prosta
   )
-  pattern <- r$sol$int$xx[c(z.index, w.index)]
-  pattern <- sapply(1:p, function(j) { c(pattern[j], pattern[p+j]) })
-  colnames(pattern) <- 1:p
-  rownames(pattern) <- c("convex", "concave")
-  fit <- r$sol$int$xx[c(f.index, g.index)]
-  MSE <- (1/n) * (r$sol$int$xx[t.index]^2)
+  pattern = r$sol$int$xx[c(z.index, w.index)]
+  pattern = sapply(1:p, function(j) { c(pattern[j], pattern[p+j]) })
+  colnames(pattern) = 1:p
+  rownames(pattern) = c("convex", "concave")
+  fit = r$sol$int$xx[c(f.index, g.index)]
+  MSE = (1/n) * (r$sol$int$xx[t.index]^2)
 
   print(status)
   print(list(pattern = pattern))
 
-  fit.component <- function(j) {
+  fit.component = function(j) {
   	
     ########################################
     # Given a component index j and
@@ -295,7 +315,7 @@ convexity.pattern.regression <- function (X, y, B = 100, lambda = 100) {
                r = r))
 }
 
-example1 <- function (n = 100, sigma = 10, B = 100, lambda = 100) {
+example1 = function (n = 100, sigma = 0.5, B = 100, lambda = 1) {
 	
   ########################################
   # A sample run with outputs and plots.
@@ -310,35 +330,34 @@ example1 <- function (n = 100, sigma = 10, B = 100, lambda = 100) {
   # Fix dimension = 2
   p = 2
 
-  # True convex component: f(x) = 0.1*x^4 + 2x
-  # True concave component: g(x) = -4*x^2 - x
+  # f is convex, g is concave
   # Function values for each component are then centered.
-  f <- function (x) { 2*x^2 + x }
-  g <- function (x) { -2*x^4 - x }
+  f = function (x) { 2*x^2 + x }
+  g = function (x) { -2*x^4 - x }
 
   # X: n by p design matrix, y: function values (n-vector)
-  x1 <- runif(n, -1, 1)
-  x2 <- runif(n, -1, 1)
-  X <- Matrix(c(x1, x2), nrow=n) 
+  x1 = runif(n, -1, 1)
+  x2 = runif(n, -1, 1)
+  X = Matrix(c(x1, x2), nrow=n) 
 
-  y1 <- sapply(x1, f)
-  y2 <- sapply(x2, g)
-  y1 <- y1 - mean(y1)
-  y2 <- y2 - mean(y2)
+  y1 = sapply(x1, f)
+  y2 = sapply(x2, g)
+  y1 = y1 - mean(y1)
+  y2 = y2 - mean(y2)
 
-  epsilon <- rnorm(n, 0, sigma) # Gaussian noise
-  y <- y1 + y2 + epsilon
+  epsilon = rnorm(n, 0, sigma) # Gaussian noise
+  y = y1 + y2 + epsilon
 
   # Run the main function and print out the patterns
-  result <- convexity.pattern.regression(X, y, B, lambda)
-  f1 <- result$f[,1]
-  f2 <- result$f[,2]
-  g1 <- result$g[,1]
-  g2 <- result$g[,2]
-  fit <- rowSums(result$fit)
+  result = convexity.pattern.regression(X, y, B, lambda)
+  f1 = result$f[,1]
+  f2 = result$f[,2]
+  g1 = result$g[,1]
+  g2 = result$g[,2]
+  fit = rowSums(result$fit)
 
   # Sample plot in each component
-  m <- matrix(c(1,2,3,3), nrow = 2, ncol = 2, byrow = TRUE)
+  m = matrix(c(1,2,3,3), nrow = 2, ncol = 2, byrow = TRUE)
   layout(mat = m, heights = c(0.4, 0.2))
 
   # Component 1
@@ -346,8 +365,8 @@ example1 <- function (n = 100, sigma = 10, B = 100, lambda = 100) {
   plot(x1, y, 
        main = "Convexity Pattern Regression (1)", xlab = expression(x[1]))
   # sort by order of x1 for drawing lines
-  ord1 <- order(x1)
-  true.f <- sapply(x1, f)
+  ord1 = order(x1)
+  true.f = sapply(x1, f)
   lines(x1[ord1], (true.f - mean(true.f))[ord1], lwd = 5, col = "darkgray")
   lines(x1[ord1], f1[ord1], lwd = 2, col = "red") # convex comp
   lines(x1[ord1], g1[ord1], lwd = 2, col = "blue") # concave comp
@@ -358,8 +377,8 @@ example1 <- function (n = 100, sigma = 10, B = 100, lambda = 100) {
   plot(x2, y, 
        main = "Convexity Pattern Regression (2)", xlab = expression(x[2]))
   # sort by the order of x2 for drawing lines
-  ord2 <- order(x2)
-  true.g <- sapply(x2, g)
+  ord2 = order(x2)
+  true.g = sapply(x2, g)
   lines(x2[ord2], (true.g - mean(true.g))[ord2], lwd = 5, col = "darkgray")
   lines(x2[ord2], f2[ord2], lwd = 2, col = "red") # convex comp
   lines(x2[ord2], g2[ord2], lwd = 2, col = "blue") # concave comp
@@ -377,7 +396,7 @@ example1 <- function (n = 100, sigma = 10, B = 100, lambda = 100) {
          pch = c(21, 20, 20, 20, 20))
 }
 
-example2 <- function (n = 100, sigma = 1, B = 200, lambda = 1) {
+example2 = function (n = 100, sigma = 1, B = 200, lambda = 1) {
   
   ########################################
   # Another sample run with more components.
@@ -393,14 +412,14 @@ example2 <- function (n = 100, sigma = 1, B = 200, lambda = 1) {
 
   # True components (domain [-5, 5]):
   # Note: Function values for each component are then centered.
-  f <- list()
+  f = list()
   pattern = list()
   
-  f[[1]] <- function (x) { -1*x^2 - 10*x } # concave
-  f[[2]] <- function (x) { 2*x^4 - 2*x } # convex
-  f[[3]] <- function (x) { 5 * (x-20) * log(3*(x+6.1)) } # convex
-  f[[4]] <- function (x) { -60 * exp(0.05*x^2 - 0.1*x) } # concave
-  f[[5]] <- function (x) { 0 } # zero
+  f[[1]] = function (x) { -1*x^2 - 10*x } # concave
+  f[[2]] = function (x) { 2*x^4 - 2*x } # convex
+  f[[3]] = function (x) { 5 * (x-20) * log(3*(x+6.1)) } # convex
+  f[[4]] = function (x) { -60 * exp(0.05*x^2 - 0.1*x) } # concave
+  f[[5]] = function (x) { 0 } # zero
 
   pattern[[1]] = c(0,1)
   pattern[[2]] = c(1,0)
@@ -410,35 +429,35 @@ example2 <- function (n = 100, sigma = 1, B = 200, lambda = 1) {
 
   
   # X: n by p design matrix, y: function values (n-vector)
-  X <- Matrix(runif(n*p, -1, 1), nrow=n) 
+  X = Matrix(runif(n*p, -1, 1), nrow=n) 
 
-  y <- rowSums(sapply(1:p, function (j) {
-  	                    f_j <- sapply(X[,j], f[[j]])
+  y = rowSums(sapply(1:p, function (j) {
+  	                    f_j = sapply(X[,j], f[[j]])
   	                    return (f_j - mean(f_j))
                         })) 
-  y <- y + rnorm(n, 0, sigma) # Gaussian noise
+  y = y + rnorm(n, 0, sigma) # Gaussian noise
          
   # Run the main function and print out the patterns
-  result <- convexity.pattern.regression(X, y, B, lambda)
+  result = convexity.pattern.regression(X, y, B, lambda)
 
   true.pattern = sapply(1:p, function(j) { pattern[[j]] })
-  colnames(true.pattern) <- 1:p
-  rownames(true.pattern) <- c("convex", "concave")
+  colnames(true.pattern) = 1:p
+  rownames(true.pattern) = c("convex", "concave")
   print(list(true.pattern=true.pattern))
                
-  fit <- rowSums(result$fit)
+  fit = rowSums(result$fit)
 
   # Sample plot in each component
-  m <- matrix(c(1,2,3,4,5,6,6,6,6,6), nrow = 2, ncol = 5, byrow = TRUE)
+  m = matrix(c(1,2,3,4,5,6,6,6,6,6), nrow = 2, ncol = 5, byrow = TRUE)
   layout(mat = m, heights = c(0.4, 0.2))
   for (j in 1:p) {
     par(mar = c(2,4,4,2))
     # sort by x_j for drawing lines
-    ord <- order(X[,j])
+    ord = order(X[,j])
     plot(X[,j], y, 
          main = sprintf("Convexity Pattern Regression (%d)", j), 
          xlab = expression(x[j]))
-    f_j <- sapply(X[,j], f[[j]])
+    f_j = sapply(X[,j], f[[j]])
     lines(X[,j][ord], (f_j - mean(f_j))[ord], lwd = 5, col = "darkgray")
     lines(X[,j][ord], result$f[,j][ord], lwd = 2, col = "red")
     lines(X[,j][ord], result$g[,j][ord], lwd = 2, col = "blue")
@@ -457,7 +476,7 @@ example2 <- function (n = 100, sigma = 1, B = 200, lambda = 1) {
          pch = c(21, 20, 20, 20, 20))
 }
 
-example3 <- function (n = 100, sigma = 10, B = 200, lambda = 20) {
+example3 = function (n = 100, sigma = 10, B = 200, lambda = 10) {
   
   ########################################
   # A sample run with correlated Gaussians
@@ -473,7 +492,7 @@ example3 <- function (n = 100, sigma = 10, B = 200, lambda = 20) {
   	stop ("MASS not installed.")
   }
 
-  # Fix dimension = 7
+  # Fix dimension = 8
   p = 8
 
   # X: n by p design matrix, y: function values (n-vector)
@@ -481,45 +500,45 @@ example3 <- function (n = 100, sigma = 10, B = 200, lambda = 20) {
   # The covariates are sampled from a 2-D correlated Gaussian 
   # with mean 0, some random covariance.
   # the last two dimensions are zero.
-  Sigma.half <- Matrix(runif(p*p, -2, 2), nrow = p)
-  Sigma <- t(Sigma.half) %*% Sigma.half
-  X <- cBind(mvrnorm(n = n, mu = rep(0, p), Sigma = Sigma))
+  Sigma.half = Matrix(runif(p*p, -2, 2), nrow = p)
+  Sigma = t(Sigma.half) %*% Sigma.half
+  X = cBind(mvrnorm(n = n, mu = rep(0, p), Sigma = Sigma))
   # sample again if any value is greater than 10 or less than -10
   while (max(abs(X)) > 10) {
   	cat("Re-sampling covariates from a correlated Gaussian...\n")
-  	X <- cBind(mvrnorm(n = n, mu = rep(0, p), Sigma = Sigma))
+  	X = cBind(mvrnorm(n = n, mu = rep(0, p), Sigma = Sigma))
   }
 
   # True components:
   # Note: Function values for each component are then centered.
-  f <- list()
-  f[[1]] <- function (x) { -0.1*x^4 - 2*x } # concave
-  f[[2]] <- function (x) { 3*x^2 + x } # convex
+  f = list()
+  f[[1]] = function (x) { -0.1*x^4 - 2*x } # concave
+  f[[2]] = function (x) { 3*x^2 + x } # convex
   for (j in 3:p) {
-  	f[[j]] <- function (x) { 0 } # zero
+  	f[[j]] = function (x) { 0 } # zero
   }
 
-  y <- rowSums(sapply(1:p, function (j) {
-  	                    f_j <- sapply(X[,j], f[[j]])
+  y = rowSums(sapply(1:p, function (j) {
+  	                    f_j = sapply(X[,j], f[[j]])
   	                    return (f_j - mean(f_j))
                         })) 
-  y <- y + rnorm(n, 0, sigma) # Gaussian noise
+  y = y + rnorm(n, 0, sigma) # Gaussian noise
          
   # Run the main function and print out the patterns
-  result <- convexity.pattern.regression(X, y, B, lambda)
-  fit <- rowSums(result$fit)
+  result = convexity.pattern.regression(X, y, B, lambda)
+  fit = rowSums(result$fit)
 
   # Sample plot in each component
-  m <- matrix(c(1:p, rep(p+1, p)), nrow = 2, ncol = ceiling(p/2), byrow = TRUE)
+  m = matrix(c(1:p, rep(p+1, p)), nrow = 2, ncol = ceiling(p/2), byrow = TRUE)
   layout(mat = m, heights = c(0.4, 0.25))
   for (j in 1:p) {
     par(mar = c(2,4,4,2))
     # sort by x_j for drawing lines
-    ord <- order(X[,j])
+    ord = order(X[,j])
     plot(X[,j], y, 
          main = sprintf("(%d)", j), 
          xlab = expression(x[j]))
-    f_j <- sapply(X[,j], f[[j]])
+    f_j = sapply(X[,j], f[[j]])
     lines(X[,j][ord], (f_j - mean(f_j))[ord], lwd = 2, col = "darkgray")
     lines(X[,j][ord], result$f[,j][ord], lwd = 2, col = "red")
     lines(X[,j][ord], result$g[,j][ord], lwd = 2, col = "blue")
