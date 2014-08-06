@@ -68,6 +68,11 @@ convexity.pattern.regression.1d = function (x, y, B = 10, lambda = 1) {
   # Program size
   n = length(x) # number of points
 
+  # Sort the points and keep the order
+  ord = order(x)
+  x = x[ord]
+  y = y[ord]
+
   #---------------------------------------
   # Mixed Integer (0/1) SOCP
   # using Rmosek CQP
@@ -137,27 +142,20 @@ convexity.pattern.regression.1d = function (x, y, B = 10, lambda = 1) {
   n2 = n2.part1 + n2.part2
   
   A2 = Matrix(0, nrow = n2, ncol = num.vars)
-  
-  # take the ordering (for sorting and putting back in order)
-  ord = order(x)
-  # the following sequence x is sorted
-  x.sorted = x[ord]
   	
   # part 1
   diag.f = bandSparse(n-1, n, c(0, 1), list(rep(-1, n-1), rep(1, n-1)))
   diag.g = diag.f
-  diag.beta = cBind(.sparseDiagonal(n-1, x.sorted[2:n] - x.sorted[1:(n-1)]),
-                     Matrix(0, n-1, 1))
+  diag.beta = .sparseDiagonal(n-1, x[2:n] - x[1:(n-1)])
   diag.gamma = diag.beta
   	
   rows.f = seq(1, n-1)
   rows.g = (n-1) + seq(1, n-1)
-  # permute the (upper-)diagonal matrices back in order
-  inv.ord = invPerm(ord)[-ord[n]] # remove the last dummy entry
-  A2[rows.f, f.index] = diag.f[, invPerm(ord)]
-  A2[rows.f, beta.index] = -diag.beta[, inv.ord]
-  A2[rows.g, g.index] = diag.g[, invPerm(ord)]
-  A2[rows.g, gamma.index] = -diag.gamma[, inv.ord]
+
+  A2[rows.f, f.index] = diag.f
+  A2[rows.f, beta.index] = -diag.beta
+  A2[rows.g, g.index] = diag.g
+  A2[rows.g, gamma.index] = -diag.gamma
   	
   # part 2
   diag2.beta = bandSparse(n-2, n-1, c(0, 1), list(rep(-1, n-2), rep(1, n-2)))
@@ -165,8 +163,8 @@ convexity.pattern.regression.1d = function (x, y, B = 10, lambda = 1) {
   
   rows.beta = 2*(n-1) + seq(1, n-2)
   rows.gamma = 2*(n-1) + (n-2) + seq(1, n-2)
-  A2[rows.beta, beta.index] = diag2.beta[, inv.ord]
-  A2[rows.gamma, gamma.index] = diag2.gamma[, inv.ord]
+  A2[rows.beta, beta.index] = diag2.beta
+  A2[rows.gamma, gamma.index] = diag2.gamma
 
   # Affine constraint 3: identifiability via centering [2 equalities]
 
@@ -257,6 +255,9 @@ convexity.pattern.regression.1d = function (x, y, B = 10, lambda = 1) {
   pattern = matrix(r$sol$int$xx[c(z.index, w.index)])
   colnames(pattern) = c("pattern")
   rownames(pattern) = c("convex", "concave")
+  
+  f = r$sol$int$xx[f.index][invPerm(ord)]
+  g = r$sol$int$xx[g.index][invPerm(ord)]
   MSE = (1/n) * (r$sol$int$xx[t.index]^2)
 
   print(status)
@@ -264,16 +265,16 @@ convexity.pattern.regression.1d = function (x, y, B = 10, lambda = 1) {
 
   fit = rep(0, n)
   if (pattern["convex",]) {
-  	fit = r$sol$int$xx[f.index]
+  	fit = f
   } else if (pattern["concave",]) {
-  	fit = r$sol$int$xx[g.index]
+  	fit = g
   }
   
   return (list(status = status,
                pattern = pattern,
                fit = fit,
-               f = r$sol$int$xx[f.index],
-               g = r$sol$int$xx[g.index],
+               f = f,
+               g = g,
                MSE = MSE,
                r = r))	
 }
@@ -308,7 +309,7 @@ example.1d = function (n = 100, sigma = 1, B = 10, lambda = 1) {
 }
 
 convexity.pattern.backfit = function (X, y, B = 10, lambda = 1, 
-                                       max.step = 30, rtol = 1e-4) {
+                                       max.step = 30, tol = 1e-5) {
 	
   ########################################
   #
@@ -351,6 +352,7 @@ convexity.pattern.backfit = function (X, y, B = 10, lambda = 1,
   new.pattern = matrix(0, 2, p)
   rownames(new.pattern) = c("convex", "concave")
   colnames(new.pattern) = 1:p
+  new.MSE = 0
   
   # Set a random visiting order
   visit.order = sample(p, p, replace = FALSE)
@@ -367,6 +369,7 @@ convexity.pattern.backfit = function (X, y, B = 10, lambda = 1,
   	
   	current.fit = new.fit
   	current.pattern = new.pattern
+  	current.MSE = new.MSE
   	
   	for (j in visit.order) {
   	  
@@ -390,15 +393,20 @@ convexity.pattern.backfit = function (X, y, B = 10, lambda = 1,
   	
   	
   	L2.distance = sqrt(sum((new.fit-current.fit)^2))
-  	MSE = mean((y - rowSums(new.fit))^2)
-  	history[[iter]] = c(L2.distance, MSE)
+  	new.MSE = mean((y - rowSums(new.fit))^2)
+  	history[,iter] = c(L2.distance, new.MSE)
   	
-  	if (L2.distance <= rtol * sqrt(sum(current.fit^2))) {
+  	# stoping criterion: L2-distance between current and new fitted values 
+  	#                    or change in mean squared error is small
+  	if (current.MSE < new.MSE) {
+  		cat("Warning: the objective (mean squared error) increased.")
+  	}
+  	else if (L2.distance <= tol || current.MSE - new.MSE <= tol) {
   		break
   	}
   	cat(sprintf("Iteration %d: L2-distance=%f\n", iter, L2.distance))
-  	cat(sprintf("Mean Squared Error: %f\n", MSE))
-  	print(list(history=history))
+  	cat(sprintf("Mean Squared Error: %f\n", new.MSE))
+  	print(list(history=history[,1:iter]))
   	cat("========================================\n")
   	
   	if (iter == max.step) {
@@ -415,7 +423,7 @@ convexity.pattern.backfit = function (X, y, B = 10, lambda = 1,
 }
 
 backfit.example1 = function (n = 100, sigma = 1, B = 10, lambda = 1, 
-                          max.step = 30, rtol = 1e-4) {
+                          max.step = 30, tol = 1e-5) {
 	
   ########################################
   #
@@ -460,6 +468,7 @@ backfit.example1 = function (n = 100, sigma = 1, B = 10, lambda = 1,
   new.pattern = matrix(0, 2, p)
   rownames(new.pattern) = c("convex", "concave")
   colnames(new.pattern) = 1:p
+  new.MSE = 0
   
   # Set a random visiting order
   visit.order = sample(p, p, replace = FALSE)
@@ -472,6 +481,7 @@ backfit.example1 = function (n = 100, sigma = 1, B = 10, lambda = 1,
   	
   	current.fit = new.fit
   	current.pattern = new.pattern
+  	current.MSE = new.MSE
   	
   	for (j in visit.order) {
   	  
@@ -494,6 +504,7 @@ backfit.example1 = function (n = 100, sigma = 1, B = 10, lambda = 1,
   	}
   	
   	L2.distance = sqrt(sum((new.fit-current.fit)^2))
+  	new.MSE = mean((y - rowSums(new.fit))^2)
   	
   	par(mfrow = c(1,2))
   	
@@ -513,11 +524,16 @@ backfit.example1 = function (n = 100, sigma = 1, B = 10, lambda = 1,
   	
   	Sys.sleep(0.3)
   	
-  	if (L2.distance <= rtol * sqrt(sum(current.fit^2))) {
+  	# stoping criterion: L2-distance between current and new fitted values 
+  	#                    or change in mean squared error is small
+  	if (current.MSE < new.MSE) {
+  		cat("Warning: the objective (mean squared error) increased.")
+  	}
+  	else if (L2.distance <= tol || current.MSE - new.MSE <= tol) {
   		break
   	}
   	cat(sprintf("Iteration %d: L2-distance=%f\n", iter, L2.distance))
-  	cat(sprintf("Mean Squared Error: %f\n", mean((y - rowSums(new.fit))^2)))
+  	cat(sprintf("Mean Squared Error: %f\n", new.MSE))
   	cat("========================================\n")
   	
   	if (iter == max.step) {
@@ -533,7 +549,7 @@ backfit.example1 = function (n = 100, sigma = 1, B = 10, lambda = 1,
 }
 
 backfit.example2 = function (n = 100, sigma = 1, B = 10, lambda = 1, 
-                             max.step = 30, rtol = 1e-2) {
+                             max.step = 20, tol = 1e-5) {
   
   ########################################
   # A sample run with the same example2
@@ -571,7 +587,7 @@ backfit.example2 = function (n = 100, sigma = 1, B = 10, lambda = 1,
   y = rowSums(y.components) + rnorm(n, 0, sigma) # Gaussian noise
   
   # Run the main function
-  result = convexity.pattern.backfit(X, y, B, lambda, max.step, rtol)
+  result = convexity.pattern.backfit(X, y, B, lambda, max.step, tol)
   fit = rowSums(result$fit)
 
   # Sample plot in each component
@@ -606,7 +622,7 @@ backfit.example2 = function (n = 100, sigma = 1, B = 10, lambda = 1,
 }
 
 backfit.example3 = function (n = 100, sigma = 1, B = 10, lambda = 1, 
-                             max.step = 30, rtol = 1e-2) {
+                             max.step = 10, tol = 1e-5) {
   
   ########################################
   # A sample run with the same example3
@@ -662,7 +678,7 @@ backfit.example3 = function (n = 100, sigma = 1, B = 10, lambda = 1,
   y = rowSums(y.components) + rnorm(n, 0, sigma) # Gaussian noise
   
   # Run the main function
-  result = convexity.pattern.backfit(X, y, B, lambda, max.step, rtol)
+  result = convexity.pattern.backfit(X, y, B, lambda, max.step, tol)
   fit = rowSums(result$fit)
 
   # Sample plot in each component
