@@ -405,7 +405,7 @@ convexity.pattern.backfit = function (X, y, B = 10, lambda = 1,
       break
     }
     cat(sprintf("Iteration %d: L2-distance=%f\n", iter, L2.distance))
-    cat(sprintf("Mean Squared Error: %f\n", new.MSE))
+    cat(sprintf("Mean Squared Error=%f\n", new.MSE))
     print(list(history=history[,1:iter]))
     cat("========================================\n")
     
@@ -417,7 +417,7 @@ convexity.pattern.backfit = function (X, y, B = 10, lambda = 1,
   
   return (list(fit = new.fit,
                pattern = new.pattern,
-               MSE = mean((y - rowSums(new.fit))^2),
+               MSE = new.MSE,
                iter = iter))
 
 }
@@ -533,7 +533,7 @@ backfit.example1 = function (n = 100, sigma = 1, B = 10, lambda = 1,
       break
     }
     cat(sprintf("Iteration %d: L2-distance=%f\n", iter, L2.distance))
-    cat(sprintf("Mean Squared Error: %f\n", new.MSE))
+    cat(sprintf("Mean Squared Error=%f\n", new.MSE))
     cat("========================================\n")
     
     if (iter == max.step) {
@@ -544,7 +544,7 @@ backfit.example1 = function (n = 100, sigma = 1, B = 10, lambda = 1,
   
   return (list(fit = new.fit,
                pattern = new.pattern,
-               MSE = mean((y - rowSums(new.fit))^2)))
+               MSE = new.MSE))
 
 }
 

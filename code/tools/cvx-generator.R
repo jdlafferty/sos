@@ -43,14 +43,13 @@ cvx.generator = function (n = 100, p = 5, sigma = 1, pattern = NULL,
   #
   # [Output]
   # a list consisting of...
-  #   $pattern: a Boolean (0/1) matrix indicating
-  #             whether each component is
-  #             convex, concave, or zero
+  #   $pattern: pattern as a p-vector
+  #             1 convex, -1 concave, 0 sparse
   #   $X: an n by p matrix, each column
   #         is the vector of data points 
   #         for each component
   #   $M: an n by p matrix, each column
-  #       is a vector of values from
+  #       is a vector of true values from
   #       each component
   #   $y: an n-vector of the output values.
   #       note that y = rowSums(M) + noise.
