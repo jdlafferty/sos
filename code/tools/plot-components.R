@@ -109,6 +109,6 @@ plot.components = function (X, y, fit, pattern, true.components = NULL,
   
   # Save to file if specified
   if (!is.null(file)) {
-  	dev.off()
+    dev.off()
   }
 }
