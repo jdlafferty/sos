@@ -181,7 +181,7 @@ cvx.generator = function (n = 100, p = 5, sigma = 1, pattern = NULL,
   # Compute y
   #---------------------------------------
   
-  noise = rnorm(n, 0, 1)
+  noise = rnorm(n, 0, sigma)
   y = rowSums(M) + noise
   
   
