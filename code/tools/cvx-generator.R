@@ -72,7 +72,7 @@ cvx.generator = function (n = 100, p = 5, sigma = 1, pattern = NULL,
   # Make sure that the input pattern is valid, if given
   if (!is.null(pattern)) {
     if (!is.vector(pattern)) {
-      stop ("Input 'pattern' must be a p-vector.\n")
+      stop ("Input 'pattern' must be a p-vector")
     } 
     if (!all(sapply(pattern, 
                     function (i) { (i == 1) || (i == 0) || (i == -1) } ))) {
