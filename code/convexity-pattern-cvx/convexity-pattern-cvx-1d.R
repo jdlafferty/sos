@@ -33,7 +33,7 @@
 ################################################################################
 
 convexity.pattern.cvx.1d = function (x, y, lambda = 1) {
-	
+  
   ########################################
   #
   # 1-D convexity pattern regression function
@@ -83,8 +83,8 @@ convexity.pattern.cvx.1d = function (x, y, lambda = 1) {
 
   # Helper function: Accessing the last element of a sequence
   last = function (x) {
-  	# x is a sequence
-  	return (x[length(x)])
+    # x is a sequence
+    return (x[length(x)])
   }
 
   # [Program variables]
@@ -139,13 +139,13 @@ convexity.pattern.cvx.1d = function (x, y, lambda = 1) {
   n2 = n2.part1 + n2.part2
   
   A2 = Matrix(0, nrow = n2, ncol = num.vars)
-  	
+    
   # part 1
   diag.f = bandSparse(n-1, n, c(0, 1), list(rep(-1, n-1), rep(1, n-1)))
   diag.g = diag.f
   diag.beta = .sparseDiagonal(n-1, x[2:n] - x[1:(n-1)])
   diag.gamma = diag.beta
-  	
+    
   rows.f = seq(1, n-1)
   rows.g = (n-1) + seq(1, n-1)
 
@@ -153,7 +153,7 @@ convexity.pattern.cvx.1d = function (x, y, lambda = 1) {
   A2[rows.f, beta.index] = -diag.beta
   A2[rows.g, g.index] = diag.g
   A2[rows.g, gamma.index] = -diag.gamma
-  	
+    
   # part 2
   diag2.beta = bandSparse(n-2, n-1, c(0, 1), list(rep(-1, n-2), rep(1, n-2)))
   diag2.gamma = -diag2.beta
@@ -236,14 +236,14 @@ convexity.pattern.cvx.1d = function (x, y, lambda = 1) {
 
   # helper: check if the fit is "essentially" zero
   is.zero = function (fit, tol = 1e-4) {
-  	return (max(abs(fit)) < n*tol)
+    return (max(abs(fit)) < n*tol)
   }
   # helper: returns the pattern matrix
   get.pattern = function(f, g) {
-  	p = matrix(as.integer(c(!is.zero(f), !is.zero(g))), nrow = 2)
-  	rownames(p) = c("convex", "concave")
-  	colnames(p) = c("pattern")
-  	return (p)
+    p = matrix(as.integer(c(!is.zero(f), !is.zero(g))), nrow = 2)
+    rownames(p) = c("convex", "concave")
+    colnames(p) = c("pattern")
+    return (p)
   }
 
   f = r$sol$itr$xx[f.index][invPerm(ord)]
@@ -253,9 +253,9 @@ convexity.pattern.cvx.1d = function (x, y, lambda = 1) {
 
   fit = rep(0, n)
   if (pattern["convex",]) {
-  	fit = f
+    fit = f
   } else if (pattern["concave",]) {
-  	fit = g
+    fit = g
   }
   
   return (list(status = status,
@@ -280,7 +280,7 @@ example.1d = function (n = 100, sigma = 1, lambda = 2) {
   x = runif(n, -5, 5)
   # Resample if any two points are too close.
   while (min(dist(x)) < 1e-6) {
-  	x = runif(n, -5, 5)
+    x = runif(n, -5, 5)
   }
   epsilon = rnorm(n, 0, sigma) # Gaussian noise
   f.val = scale(f(x))
@@ -303,7 +303,7 @@ example.1d = function (n = 100, sigma = 1, lambda = 2) {
 }
 
 convexity.pattern.cvx.1d.auto = function (x, y, step = 0.1, max.step = 100) {
-	
+  
   ########################################
   #
   # This function chooses 'lambda' automatically
@@ -339,13 +339,12 @@ convexity.pattern.cvx.1d.auto = function (x, y, step = 0.1, max.step = 100) {
   # (i.e. stop right before both components are active)
   result = convexity.pattern.cvx.1d(x, y, 0)
   for (lambda in step * seq(1, max.step)) {
-  	cat(sprintf("Testing lambda = %.1f...\n", lambda))
-  	new.result = convexity.pattern.cvx.1d(x, y, lambda)
-  	# both patterns active: c(1, 1)
-  	if (all(new.result$pattern == c(1, 1))) {
-  		break
-  	}
-  	result = new.result
+    new.result = convexity.pattern.cvx.1d(x, y, lambda)
+    # both patterns active: c(1, 1)
+    if (all(new.result$pattern == c(1, 1))) {
+      break
+    }
+    result = new.result
   }
   
   result$lambda = lambda
@@ -365,7 +364,7 @@ example.1d.auto = function (n = 100, sigma = 1, step = 0.1, max.step = 100) {
   x = runif(n, -5, 5)
   # Resample if any two points are too close.
   while (min(dist(x)) < 1e-6) {
-  	x = runif(n, -5, 5)
+    x = runif(n, -5, 5)
   }
   epsilon = rnorm(n, 0, sigma) # Gaussian noise
   f.val = scale(f(x))

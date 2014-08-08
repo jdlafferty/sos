@@ -73,8 +73,8 @@ convexity.pattern.regression = function (X, y, B = 100, lambda = 1) {
 
   # Helper function: Accessing the last element of a sequence
   last = function (x) {
-  	# x is a sequence
-  	return (x[length(x)])
+    # x is a sequence
+    return (x[length(x)])
   }
 
   # [Program variables]
@@ -108,9 +108,9 @@ convexity.pattern.regression = function (X, y, B = 100, lambda = 1) {
   g.select.row = lapply(1:n, function (i) { last(f.index) + seq(i*p-p+1, i*p) })
   g.select.col = lapply(1:p, function (j) { last(f.index) + seq(j, n*p, p) })
   beta.select.col = lapply(1:p, function (j) { 
-  	                          last(r.index) + seq(j, (n-1)*p, p) })
+                              last(r.index) + seq(j, (n-1)*p, p) })
   gamma.select.col = lapply(1:p, function (j) { 
-  	                          last(beta.index) + seq(j, (n-1)*p, p) })
+                              last(beta.index) + seq(j, (n-1)*p, p) })
   # For conic constraint 1:
   u.select.col = lapply(1:p, function (j) { last(g.index) + seq(j, n*p, p) })
   v.select.col = lapply(1:p, function (j) { last(u.index) + seq(j, n*p, p) })
@@ -152,32 +152,32 @@ convexity.pattern.regression = function (X, y, B = 100, lambda = 1) {
   A2 = Matrix(0, nrow = n2, ncol = num.vars)
   
   for (j in 1:p) {
-  	# take the ordering (for sorting and putting back in order)
-  	ord = order(X[, j])
-  	# the following sequence x is sorted
-  	x = X[ord, j]
-  	
-  	# part 1
-  	diag.f = bandSparse(n-1, n, c(0, 1), list(rep(-1, n-1), rep(1, n-1)))
-  	diag.g = diag.f
-  	diag.beta = cBind(.sparseDiagonal(n-1, x[2:n] - x[1:(n-1)]),
-  	                   Matrix(0, n-1, 1))
-  	diag.gamma = diag.beta
-  	
-  	rows.f = 2*(n-1)*(j-1) + seq(1, n-1)
+    # take the ordering (for sorting and putting back in order)
+    ord = order(X[, j])
+    # the following sequence x is sorted
+    x = X[ord, j]
+    
+    # part 1
+    diag.f = bandSparse(n-1, n, c(0, 1), list(rep(-1, n-1), rep(1, n-1)))
+    diag.g = diag.f
+    diag.beta = cBind(.sparseDiagonal(n-1, x[2:n] - x[1:(n-1)]),
+                       Matrix(0, n-1, 1))
+    diag.gamma = diag.beta
+    
+    rows.f = 2*(n-1)*(j-1) + seq(1, n-1)
     rows.g = 2*(n-1)*(j-1) + (n-1) + seq(1, n-1)
-  	# permute the (upper-)diagonal matrices back in order
-  	inv.ord = invPerm(ord)[-ord[n]] # remove the last dummy entry
-  	A2[rows.f, f.select.col[[j]]] = diag.f[, invPerm(ord)]
-  	A2[rows.f, beta.select.col[[j]]] = -diag.beta[, inv.ord]
-  	A2[rows.g, g.select.col[[j]]] = diag.g[, invPerm(ord)]
-  	A2[rows.g, gamma.select.col[[j]]] = -diag.gamma[, inv.ord]
-  	
-  	# part 2
-  	diag2.beta = bandSparse(n-2, n-1, c(0, 1), list(rep(-1, n-2), rep(1, n-2)))
-  	diag2.gamma = -diag2.beta
-  	
-  	rows.beta = 2*(n-1)*p + 2*(n-2)*(j-1) + seq(1, n-2)
+    # permute the (upper-)diagonal matrices back in order
+    inv.ord = invPerm(ord)[-ord[n]] # remove the last dummy entry
+    A2[rows.f, f.select.col[[j]]] = diag.f[, invPerm(ord)]
+    A2[rows.f, beta.select.col[[j]]] = -diag.beta[, inv.ord]
+    A2[rows.g, g.select.col[[j]]] = diag.g[, invPerm(ord)]
+    A2[rows.g, gamma.select.col[[j]]] = -diag.gamma[, inv.ord]
+    
+    # part 2
+    diag2.beta = bandSparse(n-2, n-1, c(0, 1), list(rep(-1, n-2), rep(1, n-2)))
+    diag2.gamma = -diag2.beta
+    
+    rows.beta = 2*(n-1)*p + 2*(n-2)*(j-1) + seq(1, n-2)
     rows.gamma = 2*(n-1)*p + 2*(n-2)*(j-1) + (n-2) + seq(1, n-2)
     A2[rows.beta, beta.select.col[[j]]] = diag2.beta[, inv.ord]
     A2[rows.gamma, gamma.select.col[[j]]] = diag2.gamma[, inv.ord]
@@ -287,7 +287,7 @@ convexity.pattern.regression = function (X, y, B = 100, lambda = 1) {
   print(list(pattern = pattern))
 
   fit.component = function(j) {
-  	
+    
     ########################################
     # Given a component index j and
     # the outputs of the above program,
@@ -316,7 +316,7 @@ convexity.pattern.regression = function (X, y, B = 100, lambda = 1) {
 }
 
 example1 = function (n = 100, sigma = 0.5, B = 100, lambda = 1) {
-	
+  
   ########################################
   # A sample run with outputs and plots.
   # NOTE: p=2.
@@ -432,8 +432,8 @@ example2 = function (n = 100, sigma = 1, B = 200, lambda = 1) {
   X = Matrix(runif(n*p, -1, 1), nrow=n) 
 
   y = rowSums(sapply(1:p, function (j) {
-  	                    f_j = sapply(X[,j], f[[j]])
-  	                    return (f_j - mean(f_j))
+                        f_j = sapply(X[,j], f[[j]])
+                        return (f_j - mean(f_j))
                         })) 
   y = y + rnorm(n, 0, sigma) # Gaussian noise
          
@@ -489,7 +489,7 @@ example3 = function (n = 100, sigma = 10, B = 200, lambda = 10) {
   }
   
   if (!require("MASS")) {
-  	stop ("MASS not installed.")
+    stop ("MASS not installed.")
   }
 
   # Fix dimension = 8
@@ -505,8 +505,8 @@ example3 = function (n = 100, sigma = 10, B = 200, lambda = 10) {
   X = cBind(mvrnorm(n = n, mu = rep(0, p), Sigma = Sigma))
   # sample again if any value is greater than 10 or less than -10
   while (max(abs(X)) > 10) {
-  	cat("Re-sampling covariates from a correlated Gaussian...\n")
-  	X = cBind(mvrnorm(n = n, mu = rep(0, p), Sigma = Sigma))
+    cat("Re-sampling covariates from a correlated Gaussian...\n")
+    X = cBind(mvrnorm(n = n, mu = rep(0, p), Sigma = Sigma))
   }
 
   # True components:
@@ -515,12 +515,12 @@ example3 = function (n = 100, sigma = 10, B = 200, lambda = 10) {
   f[[1]] = function (x) { -0.1*x^4 - 2*x } # concave
   f[[2]] = function (x) { 3*x^2 + x } # convex
   for (j in 3:p) {
-  	f[[j]] = function (x) { 0 } # zero
+    f[[j]] = function (x) { 0 } # zero
   }
 
   y = rowSums(sapply(1:p, function (j) {
-  	                    f_j = sapply(X[,j], f[[j]])
-  	                    return (f_j - mean(f_j))
+                        f_j = sapply(X[,j], f[[j]])
+                        return (f_j - mean(f_j))
                         })) 
   y = y + rnorm(n, 0, sigma) # Gaussian noise
          

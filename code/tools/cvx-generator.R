@@ -63,38 +63,38 @@ cvx.generator = function (n = 100, p = 5, sigma = 1, pattern = NULL,
 
   # Require packages
   if (!require("Matrix")) {
-  	stop ("Matrix package not installed")
+    stop ("Matrix package not installed")
   }
   if (!require("MASS")) {
-  	stop ("MASS package not installed")
+    stop ("MASS package not installed")
   }
 
   # Make sure that the input pattern is valid, if given
   if (!is.null(pattern)) {
-  	if (!is.vector(pattern)) {
-  		stop ("Input 'pattern' must be a p-vector.\n")
-  	} 
-  	if (!all(sapply(pattern, 
-  	                function (i) { (i == 1) || (i == 0) || (i == -1) } ))) {
-  		stop (paste("Input 'pattern' must contain only",
-  		            "1 (convex), 0 (zero), or -1 (concave)"))
-  	}
-  	# Set variables
-  	p = length(pattern)
-  	num.convex = length(pattern[pattern==1])
-  	num.sparse = length(pattern[pattern==0])
+    if (!is.vector(pattern)) {
+      stop ("Input 'pattern' must be a p-vector.\n")
+    } 
+    if (!all(sapply(pattern, 
+                    function (i) { (i == 1) || (i == 0) || (i == -1) } ))) {
+      stop (paste("Input 'pattern' must contain only",
+                "1 (convex), 0 (zero), or -1 (concave)"))
+    }
+    # Set variables
+    p = length(pattern)
+    num.convex = length(pattern[pattern==1])
+    num.sparse = length(pattern[pattern==0])
   }
-  # Choose random pattern if it is not given	 
+  # Choose random pattern if it is not given   
   else {
-  	pattern = sample(c(rep(1, num.convex), rep(0, num.sparse), 
-  	                 rep(-1, p - num.convex - num.sparse)), p, replace = FALSE)
+    pattern = sample(c(rep(1, num.convex), rep(0, num.sparse), 
+                     rep(-1, p - num.convex - num.sparse)), p, replace = FALSE)
   }
   
   # make sure that the input design is valid
   design = tolower(design)
   if (!any(c(design == "uniform", design == "regular",
              design == "gaussian", design == "normal"))) {
-    stop ("Input 'design' must be either uniform, regular, gaussian, or normal")  	
+    stop ("Input 'design' must be either uniform, regular, gaussian, or normal")    
   }
 
   #---------------------------------------
@@ -104,8 +104,8 @@ cvx.generator = function (n = 100, p = 5, sigma = 1, pattern = NULL,
   num.functions = 10
   
   if (p - num.sparse > num.functions) {
-  	stop (paste("Sorry, the current implementation does not support",
-  	            sprintf("more than %d non-zero components", num.functions)))
+    stop (paste("Sorry, the current implementation does not support",
+                sprintf("more than %d non-zero components", num.functions)))
   }
   
   f = list()
@@ -128,7 +128,7 @@ cvx.generator = function (n = 100, p = 5, sigma = 1, pattern = NULL,
   # colors = rainbow(num.functions)
   # plot(x, x, pch = 20)
   # for (i in 1:num.functions) { 
-  	# lines(x[ord], M[,i][ord], col = colors[i], lwd = 2) 
+    # lines(x[ord], M[,i][ord], col = colors[i], lwd = 2) 
   # }
   # legend("top", as.character(1:num.functions), col = colors, lwd = 2)
   
@@ -138,13 +138,13 @@ cvx.generator = function (n = 100, p = 5, sigma = 1, pattern = NULL,
   
   # Uniform (default): Generate n*p points from Unif(-1, 1)
   if (design == "uniform") {
-  	X = Matrix(runif(n*p, -1, 1), nrow = n)
+    X = Matrix(runif(n*p, -1, 1), nrow = n)
   } 
   # Regular: uniformly spaced points between -1 and 1,
   #          permuted randomly in each covariate
   else if (design == "regular") {
-  	perm = seq(-1, 1, length = n)
-  	X = Matrix(sapply(1:p, function (i) { sample(perm, n, replace = FALSE) }))
+    perm = seq(-1, 1, length = n)
+    X = Matrix(sapply(1:p, function (i) { sample(perm, n, replace = FALSE) }))
   } 
   # Gaussian/normal: Generate n points from a p-variate correlated Gaussian
   #                  where the covariance matrix is randomly generated < 1
@@ -171,10 +171,10 @@ cvx.generator = function (n = 100, p = 5, sigma = 1, pattern = NULL,
   c = 1
   
   for (i in 1:p) {
-  	if (pattern[i] != 0) {
-  		M[, i] = pattern[i] * scale(sapply(X[, i], f[[c]]))
-  		c = c + 1
-  	}
+    if (pattern[i] != 0) {
+      M[, i] = pattern[i] * scale(sapply(X[, i], f[[c]]))
+      c = c + 1
+    }
   }
   
   #---------------------------------------
