@@ -83,11 +83,11 @@ So we have a linear constraint on the coefficient $\bftheta$ that is equivalent 
 where $\bfy = (y_1, \dotsc, y_n)$ and $\bfz = (z_1, \dotsc, z_n)$.
 
 
-Now we want to rewrite the constraint that $f(\bfx) = \bftheta^T\bfv_{2d}(\bfx)$ is SOS-convex. Recall that $f$ is SOS-convex if and only if the polynomial $\bfu^TH_\bftheta(\bfx)\bfu$ is sos in $(\bfx, \bfu) \in \mathbb R^{2p}$, where $H_\bftheta(\bfx)$ is the Hessian of $f$.
+Now we want to rewrite the constraint that $f(\bfx) = \bftheta^T\bfv_{2d}(\bfx)$ is SOS-convex. Recall that $f$ is SOS-convex if and only if the polynomial $\bfu^T H_f(\bfx)\bfu$ is sos in $(\bfx, \bfu) \in \mathbb R^{2p}$, where $H_f(\bfx)$ is the Hessian of $f$.
 
 For $i, j\in\{1, \cdots, p\}$ we have
 \begin{equation} \label{hessian}
-H_\bftheta(\bfx)_{ij} = \frac{\partial^2 f(\bfx)}{\partial x_i \partial x_j}  = \sum_{\bfalpha \in A_{2d} } \theta_\bfalpha \frac{\partial^2 \bfx^\bfalpha}{\partial x_i \partial x_j} = 
+H_f(\bfx)_{ij} = \frac{\partial^2 f(\bfx)}{\partial x_i \partial x_j}  = \sum_{\bfalpha \in A_{2d} } \theta_\bfalpha \frac{\partial^2 \bfx^\bfalpha}{\partial x_i \partial x_j} = 
 \begin{cases}
 \sum\limits_{\bfalpha \in A_{2d} } \theta_\bfalpha \alpha_i \alpha_j \bfx^{\bfbeta_{\bfalpha, i,j}} & (i \not= j)\\
 \sum\limits_{\bfalpha \in A_{2d}} \theta_\bfalpha \alpha_i (\alpha_i-1) \bfx^{\bfbeta_{\bfalpha, i,i}} & (i = j)
@@ -113,24 +113,24 @@ c_{\bfalpha, i, j} =
 
 Then we have
 \begin{equation}\notag
-\bfu^TH_\bftheta(\bfx)\bfu = \sum_{i,j=1}^p \inparen{ \sum_{\bfalpha \in A_{2d}} c_{\bfalpha, i, j} \theta_\bfalpha  \bfx^{\bfbeta_{\bfalpha, i,j}} } u_iu_j,
+\bfu^TH_f(\bfx)\bfu = \sum_{i,j=1}^p \inparen{ \sum_{\bfalpha \in A_{2d}} c_{\bfalpha, i, j} \theta_\bfalpha  \bfx^{\bfbeta_{\bfalpha, i,j}} } u_iu_j,
 \end{equation}
 which can be further written as
 \begin{equation} \label{lhs}
-\bfu^TH_\bftheta(\bfx)\bfu = \sum_{1 \le i \le j \le p}  \sum_{\bfbeta \in A_{2d - 2}} h_\bftheta (\bfbeta, i, j) \bfx^{\bfbeta}  u_iu_j
+\bfu^TH_f(\bfx)\bfu = \sum_{1 \le i \le j \le p}  \sum_{\bfbeta \in A_{2d - 2}} h_{\bfbeta, i, j}(\bftheta) \bfx^{\bfbeta}  u_iu_j
 \end{equation}
 where
 \begin{equation}\notag
-h_\bftheta (\bfbeta, i, j) =
+h_{\bfbeta, i, j}(\bftheta) =
 \begin{cases}
 (\beta_i + 2) (\beta_i + 1) \theta_{(\beta_1, \cdots, \beta_i + 2, \cdots, \beta_p)} & i = j\\
 2(\beta_i + 1) (\beta_j + 1) \theta_{(\beta_1, \cdots, \beta_i + 1, \cdots, \beta_j + 1 \cdots, \beta_p)} & i < j.
 \end{cases}
 \end{equation}
 
-It is then easy to see that $\bfu^TH_\bftheta(\bfx)\bfu$ is SOS if and only if
+It is then easy to see that $\bfu^T H_f(\bfx) \bfu$ is SOS if and only if there exists a matrix $Q$ such that
 \begin{equation} \label{sos-cvx}
-\bfu^TH_\bftheta(\bfx)\bfu = \bfv_d'(\bfx, \bfu)^T Q \bfv_d'(\bfx, \bfu)
+\bfu^TH_f(\bfx)\bfu = \bfv_d'(\bfx, \bfu)^T Q \bfv_d'(\bfx, \bfu)
 \end{equation}
 \begin{equation} \label{sos-cvx-psd}
 Q \succeq 0
@@ -154,7 +154,7 @@ where $\ip{A,B} = \tr(A^TB) = \sum_{i,j} A_{ij}B_{ij}$ is the  matrix inner prod
 
 Then, we can equate the coefficients of \eqref{lhs} and \eqref{rhs} to obtain:
 \begin{align}
-\ip{Q, B_{\bfbeta, i, j}} = h_\bftheta(\bfbeta, i, j) \qquad \forall\ \bfbeta \in A_{2d - 2}, 1 \le i \le j \le p \label{sos-cvx-coeff}
+\ip{Q, B_{\bfbeta, i, j}} = h_{\bfbeta, i, j}(\bftheta) \qquad \forall\ \bfbeta \in A_{2d - 2}, 1 \le i \le j \le p \label{sos-cvx-coeff}
 %\ip{Q, B_{\bfgamma}} &= 0 \qquad\qquad \text{for all other $\bfgamma$} \label{sos-cvx-coeff2}
 \end{align}
 
@@ -166,7 +166,7 @@ Putting \eqref{sos-poly}, \eqref{sos-reg-obj2}, \eqref{sos-cvx-psd}, and \eqref{
 & & \norm{\bfy-\bfz}^2 \\
 & \text{\quad\ s.t.}
 & &  V\bftheta = \bfz \\
-& & & \langle{Q, B_{\bfbeta, i, j}} \rangle = h_\bftheta(\bfbeta, i, j) \qquad \forall\ \bfbeta \in A_{2d - 2}, 1 \le i \le j \le p \\
+& & & \langle{Q, B_{\bfbeta, i, j}} \rangle = h_{\bfbeta, i, j}(\bftheta) \qquad \forall\ \bfbeta \in A_{2d - 2}, 1 \le i \le j \le p \\
 %& & & \langle{Q, B_{\bfgamma}\rangle} = 0 \qquad \text{for all other $\bfgamma$} \\
 & & & Q \psd 0 
 \end{aligned}
@@ -180,7 +180,7 @@ Putting \eqref{sos-poly}, \eqref{sos-reg-obj2}, \eqref{sos-cvx-psd}, and \eqref{
 & \text{\quad\ s.t.}
 & & \norm{\bfy-\bfz}^2 \leq t \\
 & & & V\bftheta = \bfz \\
-& & & \langle{Q, B_{\bfbeta, i, j}} \rangle = h_\bftheta(\bfbeta, i, j) \qquad \forall\ \bfbeta \in A_{2d - 2}, 1 \le i \le j \le p \\
+& & & \langle{Q, B_{\bfbeta, i, j}} \rangle = h_{\bfbeta, i, j}(\bftheta) \qquad \forall\ \bfbeta \in A_{2d - 2}, 1 \le i \le j \le p \\
 %& & & \langle{Q, B_{\bfgamma}\rangle} = 0 \qquad \text{for all other $\bfgamma$} \\
 & & & Q \psd 0 
 \end{aligned}
@@ -214,7 +214,7 @@ Thus, we can now write \eqref{sos-reg3} into a semidefinite program:
 & \text{\quad\ s.t.}
 & & \begin{bmatrix} I & -\bfz \\ -\bfz^T & 2\bfy^T\bfz - \bfy^T\bfy + t \end{bmatrix} \psd 0 \\
 & & & V\bftheta = \bfz \\
-& & & \langle{Q, B_{\bfbeta, i, j}} \rangle = h_\bftheta(\bfbeta, i, j) \qquad \forall\ \bfbeta \in A_{2d - 2}, 1 \le i \le j \le p \\
+& & & \langle{Q, B_{\bfbeta, i, j}} \rangle = h_{\bfbeta, i, j}(\bftheta) \qquad \forall\ \bfbeta \in A_{2d - 2}, 1 \le i \le j \le p \\
 %& & & \langle{Q, B_{\bfgamma}\rangle} = 0 \qquad \text{for all other $\bfgamma$} \\
 & & & Q \psd 0 
 \end{aligned}
@@ -337,14 +337,14 @@ Denote the above objective function by $g(\bftheta)$, which is a convex function
 \end{align}
 where $\bfX$ is a random variable with distribution $p(\bfx; \bftheta)$.
 
-\subsection{Gradient Projection Algorithm (Sketch)}
+\subsection{Stochastic Gradient Method (Sketch)}
 
 
-One possible approach to solving \eqref{maxlike-reg} is gradient projection algorithm, which generates a sequence $\{\bftheta_k\}$ through the recursion:
+One possible approach to solving \eqref{maxlike-reg} is stochastic gradient method, which generates a sequence $\{\bftheta_k\}_{k \ge 1}$ through the recursion:
 \begin{equation} \label{gpa-recursion}
-\bftheta_{k + 1} \leftarrow P_{sos} (\bftheta_k - \alpha_k \nabla g(\bftheta_k) ), k = 0, 1, \cdots
+\bftheta_{k + 1} \leftarrow P_{sos} (\bftheta_k - \alpha_k (\nabla g(\bftheta_k) + \xi_k) ), k = 1, 2, \cdots
 \end{equation}
-where the initial point $\bftheta_0$ is feasible for \eqref{maxlike-reg}, $\{\alpha_k\}$ is a positive sequence of stepsizes which may be chosen in different ways, and $P_{sos}(\bfgamma)$ is the projection of $\bfgamma$ onto the feasible set of \eqref{maxlike-reg}, i.e.,
+where the initial point $\bftheta_1$ is feasible for \eqref{maxlike-reg}, $\{\alpha_k\}$ is a positive sequence of stepsizes which may be chosen in different ways, $\xi_k$ is the (stochastic) error in the gradient evaluation, and $P_{sos}(\bfgamma)$ is the projection of $\bfgamma$ onto the feasible set of \eqref{maxlike-reg}, i.e.,
 \begin{equation} \label{sos-proj-reg}
 \begin{aligned}
  P_{sos}(\bfgamma): \qquad & \underset{\bftheta}{\text{minimize} }
@@ -360,7 +360,7 @@ Refer to the sos-convex regression problem. We know that \eqref{sos-proj-reg} is
  P_{sos}(\bfgamma): \qquad & \underset{\bftheta, Q}{\text{minimize} }
 & & \norm{\bftheta - \bfgamma}^2 \\
 & \text{\quad\ s.t.}
-& & \langle{Q, B_{\bfbeta, i, j}} \rangle = h_\bftheta(\bfbeta, i, j) \qquad \forall\ \bfbeta \in A_{2d - 2}, 1 \le i \le j \le p \\
+& & \langle{Q, B_{\bfbeta, i, j}} \rangle = h_{\bfbeta, i, j}(\bftheta) \qquad \forall\ \bfbeta \in A_{2d - 2}, 1 \le i \le j \le p \\
 & & & Q \psd 0 
 \end{aligned}
 \end{equation}
@@ -372,23 +372,23 @@ Similar to the transformation from \eqref{sos-reg2} to \eqref{sos-reg4}, \eqref{
 & & t \\
 & \text{\quad\ s.t.}
 & & \begin{bmatrix} I & -\bftheta \\ -\bftheta^T & 2\bfgamma^T\bftheta - \bfgamma^T\bfgamma + t \end{bmatrix} \psd 0 \\
-& & & \langle{Q, B_{\bfbeta, i, j}} \rangle = h_\bftheta(\bfbeta, i, j) \qquad \forall\ \bfbeta \in A_{2d - 2}, 1 \le i \le j \le p \\
+& & & \langle{Q, B_{\bfbeta, i, j}} \rangle = h_{\bfbeta, i, j}(\bftheta) \qquad \forall\ \bfbeta \in A_{2d - 2}, 1 \le i \le j \le p \\
 & & & Q \psd 0 
 \end{aligned}
 \end{equation}
 
-Also, we want the objective value to go down at each iteration (unless it is already optimal), i.e.,
-$$g(\bftheta_{k + 1}) < g(\bftheta_k).$$
-Note that
-\begin{align*}
-g(\bftheta + \Delta \bftheta) - g(\bftheta) =& \frac{1}{n} (\Delta \bftheta)^T \sum_{i = 1}^n \bfv_{2d}(\bfx_i) + \log \frac{\int_K \exp\left( -(\bftheta+\Delta\bftheta)^T \bfv_{2d}(\bfx) \right) \text{d}\bfx}{\int_K \exp\left( -\bftheta^T \bfv_{2d}(\bfx) \right) \text{d}\bfx}\\
-=& \frac{1}{n} (\Delta \bftheta)^T \sum_{i = 1}^n \bfv_{2d}(\bfx_i) + \log \mathbb E_\bftheta (\exp( -(\Delta \bftheta)^T \bfv_{2d}(\bfX))).
-\end{align*}
-So we want
-\begin{equation} \label{down}
-\frac{1}{n} (\Delta \bftheta_k)^T \sum_{i = 1}^n \bfv_{2d}(\bfx_i) + \log \mathbb E_{\bftheta_k} (\exp\left( -(\Delta \bftheta_k)^T \bfv_{2d}(\bfX)  \right) ) < 0
-\end{equation}
-where $\Delta \bftheta_k = \bftheta_{k + 1} - \bftheta_k$.
+%Also, we want the objective value to go down at each iteration (unless it is already optimal), i.e.,
+%$$g(\bftheta_{k + 1}) < g(\bftheta_k).$$
+%Note that
+%\begin{align*}
+%g(\bftheta + \Delta \bftheta) - g(\bftheta) =& \frac{1}{n} (\Delta \bftheta)^T \sum_{i = 1}^n \bfv_{2d}(\bfx_i) + \log \frac{\int_K \exp\left( -(\bftheta+\Delta\bftheta)^T \bfv_{2d}(\bfx) \right) \text{d}\bfx}{\int_K \exp\left( -\bftheta^T \bfv_{2d}(\bfx) \right) \text{d}\bfx}\\
+%=& \frac{1}{n} (\Delta \bftheta)^T \sum_{i = 1}^n \bfv_{2d}(\bfx_i) + \log \mathbb E_\bftheta (\exp( -(\Delta \bftheta)^T \bfv_{2d}(\bfX))).
+%\end{align*}
+%So we want
+%\begin{equation} \label{down}
+%\frac{1}{n} (\Delta \bftheta_k)^T \sum_{i = 1}^n \bfv_{2d}(\bfx_i) + \log \mathbb E_{\bftheta_k} (\exp\left( -(\Delta \bftheta_k)^T \bfv_{2d}(\bfX)  \right) ) < 0
+%\end{equation}
+%where $\Delta \bftheta_k = \bftheta_{k + 1} - \bftheta_k$.
 
 
 
