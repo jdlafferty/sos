@@ -113,7 +113,7 @@ convexity.pattern.regression.1d = function (x, y, B = 10, lambda = 1) {
   # Objective: t + lambda * (z + w)
   # where t = sqrt(sum((y_i - (f_i + g_i))^2))
   # Note that MSE = (1/n) * (t^2).
-  convexity.pattern$c = c(rep(0, last(gamma.index)), lambda, lambda, 1)
+  convexity.pattern$c = c(rep(0, last(w.index)), 1)
 
   # Affine constraint 1: auxiliary variables [no cost]
   # r_i = y_i - (f_i + g_i), that is
@@ -279,7 +279,7 @@ convexity.pattern.regression.1d = function (x, y, B = 10, lambda = 1) {
                r = r))  
 }
 
-example.1d = function (n = 100, sigma = 1, B = 10, lambda = 1) {
+example.1d = function (n = 300, sigma = 1, B = 10, lambda = 1) {
 
   ########################################
   # Testing the univariate convexity
