@@ -9,23 +9,24 @@
 #
 # ------------------------------------------------------------------------------
 #
-# Version 0.1: August 7, 2014 (possibly contains errors, in development)
+# Version 1.0: August 11, 2014
 # - A backfitting version of the convexity pattern regression
 #   where each 1-D fit is given by the convex program formulation
 #   of the 1-D convexity pattern regression. 
-# 
+# - Try example() for demos with random examples.
+
 # ** Please feel free to improve the code and leave a note here. **
 #
 ################################################################################
 
-# Change this to the location of your local repository 
-SOURCE_DIRECTORY = "~/Code/sos-convexity/sos/"
+# Change this to the location of your local repository (must end with /)
+SOURCE_DIRECTORY = "~/sos/"
 
 # Source the 1-D version (convexity.pattern.cvx.1d.auto)
 source(paste(SOURCE_DIRECTORY, 
              "code/convexity-pattern-cvx/convexity-pattern-cvx-1d.R", sep = ""))
 
-convexity.pattern.cvx.backfit = function (X, y, step = 0.1, 
+convexity.pattern.cvx.backfit = function (X, y, step = 0.01, 
                                           max.step = 20, tol = 1e-5) {
   
   ########################################
@@ -120,10 +121,12 @@ convexity.pattern.cvx.backfit = function (X, y, step = 0.1,
     cat(sprintf("Mean Squared Error=%f\n", new.MSE))
     cat("========================================\n")
     
-    if (iter == max.step) {
-      cat("Maximum steps reached before convergence.\n")
-    }
-    
+  }
+  
+  if (iter < max.step) {
+    cat(sprintf("Converged in %d iterations!\n", iter))
+  } else {
+    cat("Maximum steps reached before convergence.\n")
   }
   
   return (list(fit = new.fit,
@@ -138,10 +141,12 @@ source(paste(SOURCE_DIRECTORY, "code/tools/cvx-generator.R", sep = ""))
 # Source the plotting function (plot.components)
 source(paste(SOURCE_DIRECTORY, "code/tools/plot-components.R", sep = ""))
              
-example = function (n = 100, pattern = c(-1, 1, 1, 0, -1), max.step = 10) {
+example = function (n = 300, pattern = c(-1, 1, 1, 0, -1), 
+                    step = 0.01, max.step = 20) {
 	
 	data = cvx.generator(n, pattern = pattern)
-	result = convexity.pattern.cvx.backfit(data$X, data$y, max.step = max.step)
+	result = convexity.pattern.cvx.backfit(data$X, data$y, 
+	                                       step = step, max.step = max.step)
 	plot.components(data$X, data$y, result$fit, pattern, true.components = data$M)
 	
 }

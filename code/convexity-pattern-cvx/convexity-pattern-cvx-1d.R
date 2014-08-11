@@ -27,6 +27,20 @@
 #   of the difference in subgradients: we start from lambda = 0, and
 #   increase lambda until the other component becomes nontrivial. We then
 #   take the fit from the previous iteration.
+#
+# Version 1.2: August 11, 2014
+# - Moved the lasso-like constraint to the objective function. Now,
+#   the behavior of lambda is more like lasso: greater lambda means
+#   more regularization, and for large lambda the fit is identically zero.
+#   Note that the lambda=0 fit is always a sum of convex and concave
+#   components with MSE~0, because in 1-D, with identifiability constraints,
+#   any sequence can be expressed as a sum of a convex sequence and 
+#   a concave sequence.
+# - Made according changes to the auto function. It now has step size 0.01
+#   and chooses the optimal lambda quite nicely. 
+# - For a demo, try example.1d.auto(). 
+#   Also see ./convexity-pattern-cvx-backfit.R and run example() there
+#   for the multivariate backfitting version.
 # 
 # ** Please feel free to improve the code and leave a note here. **
 #
@@ -77,8 +91,7 @@ convexity.pattern.cvx.1d = function (x, y, lambda = 1) {
   y = y[ord]
 
   #---------------------------------------
-  # Mixed Integer (0/1) SOCP
-  # using Rmosek CQP
+  # Rmosek Conic QP
   #---------------------------------------
 
   # Helper function: Accessing the last element of a sequence
@@ -107,10 +120,13 @@ convexity.pattern.cvx.1d = function (x, y, lambda = 1) {
   # Set up the program
   convexity.pattern = list(sense = "min")
 
-  # Objective: t
+  # Objective: t + lambda * (beta_n - beta_1 - gamma_n + gamma_1)
   # where t = sqrt(sum((y_i - (f_i + g_i))^2))
   # Note that MSE = (1/n) * (t^2).
-  convexity.pattern$c = c(rep(0, t.index-1), 1)
+  convexity.pattern$c = c(rep(0, last(r.index)), 
+                          -lambda, rep(0, n-3), lambda,
+                          lambda, rep(0, n-3), -lambda,
+                          1)
 
   # Affine constraint 1: auxiliary variables [no cost]
   # r_i = y_i - (f_i + g_i), that is
@@ -182,25 +198,25 @@ convexity.pattern.cvx.1d = function (x, y, lambda = 1) {
   # This will ideally induce sparsity in the differences between subgradients
   # and ultimately the pattern.
 
-  # number of rows (affine contraints)
-  n4 = 1
+  # # number of rows (affine contraints)
+  # n4 = 1
   
-  A4 = Matrix(0, nrow = n4, ncol = num.vars)
-  A4[, c(beta.index[n-1], gamma.index[1])] = 1
-  A4[, c(beta.index[1], gamma.index[n-1])] = -1
+  # A4 = Matrix(0, nrow = n4, ncol = num.vars)
+  # A4[, c(beta.index[n-1], gamma.index[1])] = 1
+  # A4[, c(beta.index[1], gamma.index[n-1])] = -1
 
 
   # Affine constraints combined with bounds
-  convexity.pattern$A = rBind(A1, A2, A3, A4)
+  convexity.pattern$A = rBind(A1, A2, A3) #, A4)
   convexity.pattern$bc = rbind(
     blc = c(y, 
             rep(0, n2.part1), rep(0, n2.part2), 
-            rep(0, n3), 
-            rep(0, n4)),
+            rep(0, n3)),
+#            rep(0, n4)),
     buc = c(y, 
             rep(0, n2.part1), rep(Inf, n2.part2), 
-            rep(0, n3), 
-            rep(lambda, n4))
+            rep(0, n3)) 
+#            rep(lambda, n4))
   )
 
   # Constraints on the program variables
@@ -267,7 +283,7 @@ convexity.pattern.cvx.1d = function (x, y, lambda = 1) {
                r = r))
 }
 
-example.1d = function (n = 100, sigma = 1, lambda = 2) {
+example.1d = function (n = 100, sigma = 1, lambda = 0.2) {
 
   ########################################
   # Testing the univariate convexity
@@ -288,6 +304,7 @@ example.1d = function (n = 100, sigma = 1, lambda = 2) {
   
   result = convexity.pattern.cvx.1d(x, y, lambda)
   
+  par(mfrow = c(1,1))
   plot(x, y, main = "1-D Convexity Pattern Regression as a Convex Program")
   ord = order(x)
   lines(x[ord], f.val[ord], lwd = 2, col = "darkgray")
@@ -302,7 +319,7 @@ example.1d = function (n = 100, sigma = 1, lambda = 2) {
   print(list(pattern = result$pattern))
 }
 
-convexity.pattern.cvx.1d.auto = function (x, y, step = 0.1, max.step = 100) {
+convexity.pattern.cvx.1d.auto = function (x, y, step = 0.01, max.step = 100) {
   
   ########################################
   #
@@ -339,19 +356,25 @@ convexity.pattern.cvx.1d.auto = function (x, y, step = 0.1, max.step = 100) {
   # (i.e. stop right before both components are active)
   result = convexity.pattern.cvx.1d(x, y, 0)
   for (lambda in step * seq(1, max.step)) {
-    new.result = convexity.pattern.cvx.1d(x, y, lambda)
-    # both patterns active: c(1, 1)
-    if (all(new.result$pattern == c(1, 1))) {
+  	#cat(sprintf("lambda = %f\n", lambda))
+    result = convexity.pattern.cvx.1d(x, y, lambda)
+
+    if (sum(result$pattern) == 1) {
       break
     }
-    result = new.result
+    if (sum(result$pattern) == 0) {
+    	stop ("Error: Did not find a convex or concave component.")
+    }
+    if (lambda == step * max.step) {
+    	cat ("Warning: Reached maximum step before convergence.")
+    }
   }
   
   result$lambda = lambda
   return (result)
 }
 
-example.1d.auto = function (n = 100, sigma = 1, step = 0.1, max.step = 100) {
+example.1d.auto = function (n = 300, sigma = 1, step = 0.01, max.step = 100) {
 
   ########################################
   # Testing the univariate convexity
@@ -380,7 +403,7 @@ example.1d.auto = function (n = 100, sigma = 1, step = 0.1, max.step = 100) {
   points(x, result$fit, pch = 20, col = "purple")
   mtext(paste(result$status$solution, ", ", result$status$program, sep=""), 
         side = 3, adj = 0)
-  mtext(sprintf("N: %d, optimal lambda: %.1f, MSE: %.2f", 
+  mtext(sprintf("N: %d, optimal lambda: %.2f, MSE: %.2f", 
                 n, result$lambda, result$MSE), side = 3, adj = 1)
   
   print(list(pattern = result$pattern))
