@@ -164,7 +164,7 @@ Let $\phi$ be (for instance) the pdf of a Gaussian $\mc{N}(0,I)$ (not actually n
 
 The standard arguments show that (i) $f_{\eps}$ is $C^{\infty}$ for each $\eps$ (ii) $f_{\eps} \to f$ uniformly on any compact set and (iii) $f_{\eps}$ is convex for all $\eps$. Then we have shown that $f$ is a limit point of $SMX$, therefore $\overline{SMX} \supset CTSX$. \\
 
-\tb{Sketch of proof} - I sketch the standard arguments for the sake of completeness. (iii) was shown above and basically follows from the definition of convexity. \\
+\tb{Sketch of convolution argument} - I sketch the standard arguments for the sake of completeness. (iii) was shown above and basically follows from the definition of convexity. \\
 
 For (i), note that 
 
@@ -274,14 +274,119 @@ g(y) - g(x) &= g(y) - g(p_{y^*}) + g(p_{y^*}) - g(x) = -M \|y - p_{y^*}\| + g(p_
 
 Note that the $1^{st}$ inequality follows by concavity of $g$ on $C_n$, while the $2^{nd}$ inequality follows from Cauchy-Schwarz and our choice of $M$. A similar argument can be used to show that subgradients of $g$ exist for $x \in K \setminus C_n$. Then $g$ is concave on $K$. \\
 
-By construction, for $M \geq N$ we have that $g$ is a concave function. Note that $x \in \pa K \implies d(x,K) \geq \eps$. Choose $K = C_n^{\eps}$ as previously defined, where $M_{\eps} \cdot \eps = N_{\eps} \to \infty$ as $\eps \to 0$.
+By construction, for $M \geq N$ we have that $g$ is a concave function. Note that $x \in \pa K \implies d(x,K) \geq \eps$. Choose $K = C_n^{\eps}$ as previously defined, where $M_{\eps} \cdot \eps = N_{\eps} \to \infty$ as $\eps \to 0$.\\
+
+\tb{Convergence argument} - We argue that $\int_{K^c} \exp(p_m) \to 0$ as $m \to \infty$. Let $x \in K^c$. Let $\pi_x$ denote the projection of $x$ onto $C_n$. Then there exists a point $x_0 \in \pa K \cap [\pi_x, x]$. Consider a function $\gamma(t) = p_m(\nu(t))$, where $\nu$ is a parametrization of the line $[\pi_x, x]$. Let $\nu(0) = \pi_x$ and $\nu(a) = x_0$. Then there exists a $c$ such that \\
+
+\begin{align*}
+&-M \eps = \gamma(a) - \gamma(0) = \gamma'(c) \|\pi_x - x_0\|\\
+&\implies \gamma'(c) \leq \frac{-M \eps}{\|\pi_x - x_0\|} \leq \frac{-M \eps}{Diam(K)} 
+\end{align*}
+
+Since $\gamma$ is concave and $c \in [0,a]$, we then also have $\gamma'(a) \leq \frac{-M \eps}{Diam(K)}$. Then Taylor implies that 
+
+\begin{align*}
+p_m(x) = \gamma(1) &= \gamma(a) + \gamma'(a) \|x_0 - x\| + \frac{1}{2} \gamma''(d) \|x_0 - x\|^2\\
+&\leq -M \eps + \frac{-M \eps}{Diam(K)} \|x - x_0\| \leq \frac{-M \eps}{Diam(K)} \|x - x^*\|
+\end{align*} 
+
+Where $x^*$ is the projection of $x$ onto $K$. Let $\phi_m = p_m + M \eps $. Then we have 
+
+\begin{align*}
+\int_{K^c} \exp(p_m) \leq \exp(-M \eps) \int_{K^c} \exp(\phi_m) \leq \exp(-M \eps) \int_{K^c} \exp \lft \frac{-M \eps}{Diam(K)}\|x - x_0\| \rt 
+\end{align*}
+
+We chose $m$ such that $M(\eps) \eps \to \infty$ as $\eps \to 0$. Then in particular for large enough $m$ the integral is 
+
+\[
+\leq \int_{K^c} \exp \lft -\|x - x^*\| \rt  = \int_{K^c} \exp \lft -d(x,K) \rt 
+\]
+
+This integral clearly converges since $K$ is compact. Since $-M \eps \to \infty$ as $\eps \to 0$, for any bounded function $\|G\|_{\infty, \mr^p} \leq B$ we have that 
+
+\[
+\int_{K^c} G \cdot \exp (p_m)  \to 0 \quad (m \to \infty) 
+\]
+
+\tb{Summary of Integral Resuts} - Note that by construction, we have $\mc{L}(C_n^{\eps} \setminus C_n) \to 0$ as $\eps \to 0$. Moreover, we used density of sos-convex polynomials to choose $p_m$ such that $|p_m(x)| \leq |p_m(x) - g_m(x)| + |g_m(x)| \leq \epsilon + 0 \leq 1$ on $C_n^{\eps} \setminus C_n$. Therefore we easily have that 
+
+\[
+\int_{C_n^{\eps} \setminus C_n} G \cdot \exp(p_m) \leq \int_{C_n^{\eps} \setminus C_n} Be = Be \cdot \mc{L}(C_n^{\eps} \setminus C_n) \to 0
+\]
+
+For the final integral in the decomposition, we have 
+
+\[
+\int_{C_n} G \cdot \exp(p_m) \to \int_{C_n} G \cdot s_n
+\]
+
+by bounded convergence on a finite measure space, with bound \\
+
+\[
+\|G \exp(p_m) \|_{\infty, C_n} \leq B \cdot (\|s_n\|_{\infty, C_n} + 1) 
+\]
+
+ Note that the latter bound is fixed for all $m$. Therefore, for any bounded function $G$ we have that 
+
+\[
+\int_{\mr^p} G\cdot \exp(p_m) \to \int_{\mr^p} G \cdot \exp(s_n) 
+\]
+
+In particular 
+
+\[
+\int_{\mr^p} \exp(p_m) \to \int_{\mr^p} \exp(s_n ) = 1
+\]
+
+Let $z_m = \frac{\exp(p_m)}{\int_{\mr^p} \exp(p_m)} $. Then the argument above shows that for any bounded function $G$
+
+\[
+\int_{\mr^p} G\cdot z_m \to \int_{\mr^p} G \cdot f_n
+\]
+
+So that we have convergence in distribution $z_m \to f_n$. \\
+
+\tb{Convergence of objective function value} - Consider a function $z_m$ as constructed above such that $\|z_m - f_n\|_{\infty} \leq \eps$. Then for data $\{x_i\}_{i = 1}^n$, we must have in particular that $z_m(x_i) \geq f_n(x_i) - \eps$. Therefore, if we let $L$ denote the non-parametric likelihood, we have 
+
+\[
+L(z_m) \geq L(f_n) - n \eps_m \to L(f_n) \quad (m \to \infty) 
+\]
+
+Since $z_m \in SOSX$, the function returned by our convex problem must do better, so in particular our objective value converges to Cule's objective value as we let $d \to \infty$ (our construction uses $z_m$ of potentially arbitrarily high log-degrees). \\
+
+\tb{Convergence of Our Estimator in Distribution} - It remains to show that our estimator converges in distribution to the Cule estimator. Let our estimator for degree $d$ be denoted by $\be_d$. Then we know that $L(\be_d) \to L(f_n)$ as $d \to \infty$. We somehow need to use convergence of likelihood values + the shape constraint that $\beta_m$ is in particular log-concave. \\
+
+\emph{Question} - Does log-concavity + likelihood convergence imply convergence in distribution? 
 
 
-\tb{Things that I had trouble proving / omitted } \\
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\clearpage
+
+
+\tb{Things that we had trouble proving / omitted } \\
+
+** Show that we have a density relation $SOSX \longrightarrow SMSX$. This proof currently has problems. \\
+
+** Prove or disprove that our estimator $\be_d$ converges in distribution to $f_n$. \\
 
 ** Need to show that $\mc{L}(C_n) < \infty \implies \mc{L}(C_n^1) < \infty $. Note that this immediately implies that $\eps \to \mc{L}(C_n^{\eps} \setminus C_n)$ is a continuous function by standard measure theory arguments - we just need the measure space to be finite. \\
 
-**Argumentation for existence of subgradients on $K \setminus C_n$ omitted. 
+**Argumentation for existence of appropriate subgradients on $K \setminus C_n$ omitted. 
+
 
 
 
