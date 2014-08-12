@@ -1,0 +1,290 @@
+\documentclass[11pt,reqno]{amsart}
+\usepackage{amssymb,mathrsfs,color}
+\usepackage{pinlabel}
+\usepackage{graphicx}
+\usepackage{graphics} 
+
+\graphicspath{ {c:/users/mcytrynbaum/documents/rfigures/} {c:/users/mcytrynbaum/Desktop/package/} }
+\DeclareGraphicsExtensions{.pdf,.png,.jpg}
+
+%\usepackage[notcite,notref]{showkeys}
+
+%\textwidth=15cm \textheight=21.5cm
+%\oddsidemargin=0.5cm \evensidemargin=0.5cm
+\usepackage{amsmath} % for all math functions and operations
+\usepackage{amsfonts} % use this to write different scripts (e.g. Real nums, etc)
+\usepackage{mathtools} %for other math stuff not included in packages above
+\usepackage{amsthm} % in case you want the THM: COR: LEMMA: setup
+\usepackage[top=1in,bottom=1in,left=1in,right=1in]{geometry} %for setting the margins
+
+\setlength\parindent{0pt}
+
+\newtheorem{thm}{Theorem}[section]
+\newtheorem{lemma}[thm]{Lemma}
+\newtheorem{prop}[thm]{Proposition}
+\newtheorem{cor}[thm]{Corollary}
+\theoremstyle{definition}
+\newtheorem{defn}[thm]{Definition}
+\newtheorem{examp}[thm]{Example}
+\newtheorem{remark}[thm]{Remark}
+\setcounter{equation}{0}
+\numberwithin{equation}{section}
+
+\newcommand{\prf}{\begin{proof}}
+\newcommand{\eprf}{\end{proof}}
+\newcommand{\lft}{\left(}
+\newcommand{\rt}{\right)}
+\newcommand{\be}{\beta}
+\newcommand{\eps}{\epsilon}
+\newcommand{\wh}{\widehat}
+\newcommand{\wt}{\widetilde}
+\newcommand{\al}{\alpha}
+\newcommand{\bp}{\begin{pmatrix}}
+\newcommand{\ep}{\end{pmatrix}}
+\newcommand{\inv}{^{-1}}
+\newcommand{\var}{\text{Var}}
+\newcommand{\cov}{\text{Cov}}
+\newcommand{\corr}{\text{Corr}}
+\newcommand{\ssumi}{\sum_{i=1}^n}
+\newcommand{\ssumj}{\sum_{j=1}^n}
+\newcommand{\ssumk}{\sum_{k=1}^n}
+\newcommand{\im}{\text{Im}}
+\newcommand{\mc}{\mathcal}
+\newcommand{\mr}{\mathbb{R}}
+\newcommand{\ol}{\overline}
+\newcommand{\ul}{\underline}
+\newcommand{\prob}{\mathbb{P}}
+\newcommand{\ital}{\emph}
+\newcommand{\tb}{\textbf}
+\newcommand{\pa}{\partial}
+\newcommand{\dt}{\delta}
+\newcommand{\tc}{t_{comm}}
+\newcommand{\tp}{t_{patent}}
+\newcommand{\et}{\eta}
+\newcommand{\ov}{\overline}
+
+\title{Statistical Properties of Log SOS-Concave Density Estimator}
+\author{Max Cytrynbaum, Wei Hu}
+
+\begin{document}
+\maketitle
+
+\section{Introduction}
+
+In this note, we will describe an assortment of results that we think could eventually lead to a nice analysis of the statistical properties of our estimator. The structure of this note is as follows: \\
+
+(i) We show that sos-convex polynomials are dense in continuous convex functions in the sense of $\| \cdot \|_{\infty, K}$, where $K$ is a fixed compact set. \\
+
+(ii) Let $f_n$ denote the Cule estimator for $n$ data points (i.e. the max-likelihood log-concave estimator). We show that there exists a sequence of log sos-concave densities $p_n^m$ on $\mr^p$ (of potentially increasing associated degree) that converge to $f_n$ in distribution on $\mr^p$. \\
+
+(iii) We show that this implies convergence of our objective function value to the likelihood value obtained by Cule's estimator $f_n$. We think that these facts will help us show that the estimator \emph{returned by our algorithm} converges to Cule's estimator in distribution. If this is true, then the density returned by our algorithm converges in distribution to the min KL-divergence estimator as we let $n, d \to \infty$ i.e. it is asymptotically optimal. \\
+
+\section{Density of SOS-Convex Functions in Continuous Convex Functions}
+
+Fix a compact set $K \subset \mr^p$ star-shaped with respect to $x_0 \in K$. All density results in this section are with respect to the norm $\| \cdot \|_{\infty, K}$. We begin by showing that sos-convex polynomials (SOSX) are dense in smooth, strictly convex functions on $K$ (SMSX). \\
+
+Fix $f \in SMSX$. Let $H_f(x)$ denote this function's Hessian. For $x \in K$ we have $H_f(x) \succ 0$. Therefore, we can take a Cholesky factorization 
+
+\[
+H_f(x) = L_f(x)L_f(x)^T
+\]
+
+Note that since the component functions of $H_f$ are smooth, recursively all of the component functions of $L_f$ are in particular continuous (computing $L_{ij}(x)$ just involves adding, multiplying, and potentially taking the square root of other continuous functions). \\
+
+By Stone-Weierstrass, $\mr[x]_p$ is dense in $C(K)$, therefore we can find polynomials $L_{ij}^m(x) \in \mr[x]_p$ with the property $\|L_{ij}^m(x) - L_{ij}(x)\|_{\infty} \to 0 $ as $m \to \infty$ (in particular we can get simultaneous uniform convergence of the $L_{ij}^m \to L_{ij}$). Define a matrix 
+
+\[
+H_f^m(x) = L_f^m(x)L_f^m(x)^T
+\]
+
+Then by the above work we have that 
+
+\[
+\|H_f^m - H_f\|_{\infty,K} \to 0 \qquad (m \to \infty )
+\]
+
+Note that for each $m$, $H_f^m(x)$ is a polynomial matrix over $\mr^p$ that factors as $H_f^m(x) = L_f^m(x)L_f^m(x)^T$, where the Cholesky factors \emph{are also polynomial matrices}. Suppose that we can construct a polynomial $p_m$ that has $H_f^m$ as its Hessian i.e. $H_{p_m} = H_f^m$. Then by construction $p_m$ is sos-convex. \\
+
+By the above argument, we can find a sequence of polynomial matrices $H_f^m(x)$ such that 
+
+\[
+\|H_f^m(x) - H_f(x) \|_{\infty} \to 0 \quad (m \to \infty) 
+\]
+
+Build a sequence of polynomials $p_m(x)$ (of arbitrary degree) as follows. For $x_0 \in K$ (with respect to which $K$ is star-shaped), define polynomials $p_m(x)$ such that 
+
+\begin{align*} 
+&(1) \; p_m(x_0) = f(x_0) \\
+&(2) \; \nabla p_m(x_0) = \nabla f(x_0) \\
+& (3) \; H_{p_m}(x) = H_f^m(x) \quad \forall x \in K
+\end{align*}
+
+For completeness, one way to do this is as follows. Suppose we want a function $h$ such that $\nabla h = g$ and $h(x_0) = c$. Then we can set $h(x) = c + \int_0^1 g(\gamma_x(t)) \cdot \gamma_x'(t) \, dt$ for $x \in K$, where $\gamma_x$ is the line segment $[x_0,x]$. This type of construction allows us to build a polynomial of the form required above. \\
+
+Given a polynomial $p_m$ that satisfies $(1) - (3)$ as above, it is simple to bound $\|f - p_m \|_{\infty}$. We include this calculation for the sake of completeness: \\
+
+\tb{Convergence of functions from Hessian $\| \cdot \|_{\infty}$ convergence} - Choose $m$ such that we have $\|H_f^m - H_f \|_{\infty, K} < \eps$. Fix a path $\gamma(t)$ from $x_0 \to x$, which we will take to be the line segment $[x_0, x]$.  Define a function $\phi(t) = (f - p_m)(\gamma(t))$. Then by Taylor's Theorem, we have 
+
+\begin{align*} 
+&\phi(1) = \phi(0) + \phi'(0) + \frac{1}{2} \phi''(c) \quad c \in (0,1) \iff \\
+& (f - p_m)(x) = (f-p_m)(x_0) + \nabla (f - p_m)(x_0)^T(x - x_0) + \frac{1}{2} (x - x_0)^T H_{f - p_m}(z) (x - x_0) 
+\end{align*} 
+
+Where $z \in [x_0, x]$. By construction of our polynomials, the first two terms are identically 0. Moreover, the component functions $\gamma(x)$ of the Hessian $H_{f - p_m}(x)$ have $\|\gamma\|_{\infty} < \eps$. Then by Gershgorin's Theorem, we have an eigenvalue bound
+
+\[
+\lambda(x) \leq \eps + \sum_{i \not = j} |\gamma_{ij}(x)| \leq p \cdot \eps
+\]
+
+Since the Hessian is in particular Hermitian at each point, this gives a 2-norm bound on the matrix $H_{f-p_m}$. Using Cauchy-Schwarz, we have that 
+
+\[
+2 |(f - p_m)(x)| \leq \|x - x_0 \|_2 \|H_{f - p_m}(x)(x - x_0)\|_2 \leq \|x - x_0\|_2^2 \cdot p \eps \leq Diam(K)^2 \cdot p \eps
+\]
+
+Then we have show that $\|H_f^m- H_f \|_{\infty} \to 0$ implies that $\|p_m - f(x) \|_{\infty} \to 0$. The $p_m$ are all sos-convex, so we have shown that $\overline{SOS} \supset SMSX$. \\
+
+\tb{Approximation of Smooth Convex Functions} - We want to show that smooth strictly convex functions are dense in smooth convex functions i.e. $ \overline{SMSX} \supset SMX$. This is easy. Fix $\eps > 0$. Let $f \in SMX$. Then $f_{\eps}(x) := f(x) + \eps \|x \|_2^2$ is strictly convex and 
+
+\[
+|f_{\eps}(x) - f(x)| \leq \eps \|x\|_2^2 \leq \eps \cdot Diam(K)^2
+\]
+
+for$x \in K$. Then $\|f_{\eps} - f\|_{\infty} \to 0$ as $\eps \to 0$, so we have the density result. \\
+
+\tb{Approximation of Continuous Convex Functions} - Note that convolution with a positive function preserves convexity. This is easily seen from the definition. Let $f$ convex and $\phi \geq 0$, then 
+
+\[
+(\phi \ast f)(x) = \int_{\mr^p} \phi(t) f(x - t) dt 
+\]
+
+Each $f_t(x) := f(x -t)$ is convex, therefore the convolution above is convex. \\
+
+Let $\phi$ be (for instance) the pdf of a Gaussian $\mc{N}(0,I)$ (not actually necessary, we just need the function we are convolving against to be smooth and integrate to 1). For $\eps > 0$, define a class of functions $\phi_{\eps} = \frac{1}{\eps} \phi(\frac{x}{\eps})$. Fix $f$ a continuous convex function. If $f$ is not bounded, redefine $f = 0$ on $K^c$.  Define a class of functions $f_{\eps} := (\phi_{\eps} \ast f)$.\\
+
+The standard arguments show that (i) $f_{\eps}$ is $C^{\infty}$ for each $\eps$ (ii) $f_{\eps} \to f$ uniformly on any compact set and (iii) $f_{\eps}$ is convex for all $\eps$. Then we have shown that $f$ is a limit point of $SMX$, therefore $\overline{SMX} \supset CTSX$. \\
+
+\tb{Sketch of proof} - I sketch the standard arguments for the sake of completeness. (iii) was shown above and basically follows from the definition of convexity. \\
+
+For (i), note that 
+
+\[
+(\phi \ast f)(x) = \int_{\mr^p} \phi(t) f(x - t) dt = \int_{\mr^p} \phi(x - t) f(t) dt 
+\]
+
+so that whenever we need to take a derivative $\frac{\pa}{\pa x_{\alpha}} (\phi \ast f)(x)$, we just pass the differentiation operator through the integral (formal justification for this can be provided) and differentiate $\phi$, which is $C^{\infty}$. \\
+
+For (ii), rewrite the integral above as 
+
+\begin{align*}
+f_{\eps} = (\phi_{\eps} \ast f)(x) &= \int_{\mr^p} \phi_{\eps}(t) f(x - t) dt\\
+&=\int_{B_{\eps}} \phi_{\eps}(t) f(x - t) dt + \int_{B_{\eps}^c} \phi_{\eps}(t) f(x - t) dt
+\end{align*}
+
+Where we choose $B_{\eps}$ a very small ball containing $0$ of radius $h(\eps)$ such that (i) $\int_{B_{\eps}} \phi \approx 1$ and (ii) $\phi \approx 0 $ on $B_{\eps}^c$ as well as (iii) $f(x-t) \approx f(x)$ for $t \in B_{\eps}$ (this is where we use continuity on the class $CTSX$). Then roughly speaking the above decomposition is 
+
+\begin{align*}
+&\int_{B_{\eps}} \phi_{\eps}(t) f(x - t) dt + \int_{B_{\eps}^c} \phi_{\eps}(t) f(x - t) dt\\
+&\approx f(x) \int_{B_{\eps}} \phi_{\eps}(t) dt + \int_{B_{\eps}^c} 0 \cdot f(x -t) dt \\
+&\approx f(x) \cdot 1 + 0 = f(x)
+\end{align*}
+
+I claim that this gives uniform convergence $\|(\phi_{\eps} \ast f) - f\|_{\infty, K} \to 0$. Note that continuity of $f$ on $K$ implies uniform continuity, so the the approximation of the first integral in the above decomposition can be made uniform. $f$ is uniformly bounded on $\mr^p$, so the $2^{nd}$ integral above goes to $0$ uniformly. This sketch can be made rigorous but the arguments are relatively standard. \\
+
+Then we have shown that \\
+
+\[
+SOSX \longrightarrow SMSX \longrightarrow SMX \longrightarrow CTSX
+\]
+
+where the arrow denotes density (in the sense of $\| \cdot \|_{K,\infty}$ for a fixed $K$ compact and star-shaped). In particular, we have shown that sos-convex polynomials are dense in continuous convex functions on a compact, convex set $K$. \\
+
+\section{Convergence in Distribution}
+
+Consider the shape-constrained maximum-likelihood estimator $f_n$ from the Cule paper. In this section, we show that there exists a a sequence of log sos-concave densities $p_n^m$ that converge in distribution to the Cule estimator $f_n$. \\
+
+We also show that, as $d \to \infty$, the objective value, i.e. the achieved likelihood, of our program converges to the max-likelihood among log-concave estimators (the objective value of Cule's program). \\
+
+Our approach will be as follows. Given the convex hull of the data $C_n$, we will construct a set $K = C_n^{\eps}$ such that $\mc{L}(C_n^{\eps} \setminus C_n) = \eps$, where $\mc{L}$ denotes Lebesgue measure. \\
+
+We will then extend the concave function $s_n$ defining the Cule estimator ($f_n = \exp(s_n)$) to $K$ in such a way that (i) our extension is convex and (ii) our extension is increasingly negative on $\pa K$. Using our work above, let $p_m$ be a sequence of sos concave functions such that converge to our extension in $\| \cdot \|_{\infty}$. We will then argue that for any bounded function $G$ on $\mr^p$, we have 
+
+\[
+\int_{\mr^p} G(x) \exp(p_m(x)) = \int_{K^c} G(x) \exp(p_m(x)) + \int_{K \setminus C_n} G(x) \exp(p_m(x)) + \int_{C_n} G(x) \exp(p_m(x))
+\]
+
+We will show that (1) the first integral is small because loosely $p_m(x) \approx - \infty$ on $K^c$.  (2) The second integral is small because $\mc{L}(C_n^{\eps} \setminus C_n) \to 0$ as $\eps \to 0$. Finally, (3) the last integral converges to $\int_{C_n} G(x) f_n(x)$ because $\|p_m - s_n\|_{\infty,C_n} \to 0$. A rigorous formulation of this argument will show that for any bounded function $G$ we have 
+
+\[
+\int_{\mr^p} G(x) \exp(p_m(x)) dx \to \int_{\mr^p} G(x) f_n(x) dx \quad (m \to \infty) 
+\]
+
+i.e. $p_m$ converges to $f_n$ in distribution. \\
+
+\tb{Definition of $K$} - Consider the tent function $s_n$ from Cule's paper. $s_n = -\infty$ outside of $C_n$. Note that as a convex hull, we have $C_n = \{Ax \leq b\}$ for some matrix $A \in \mr^{n \times p}$ and $b \in \mr^n$. Consider the set $C_n^{\eps} = \{Ax \leq b + \epsilon 1\}$. Note that $C_n^1$ is of finite Lebesgue measure since $C_n$ is [HOW?]. Then we can apply elementary measure theory to show that 
+
+\[
+\mc{L}(C_n) = \mc{L} \lft \bigcap_{\eps > 0} C_n^{\eps} \rt = \lim_{\eps \to 0} \mc{L}(C_n^{\eps})
+\]
+
+Therefore, for instance, we can make $\mc{L}(C_n^{\eps} \setminus C_n)$ arbitrarily small by letting $\eps \to 0$. Let $K_1 \supset C_n$ a polytope of the above form such that $\mc{L}(K_1 \setminus C_n) < \eps$. From Cule, there exists a triangulation of $C_n$ such that $s_n$ is affine on each simplex in the triangulation. \\
+
+Extend this triangulation to a triangulation of the polytope $K_1$ and extend $s_n$ to $\ov{s_n}$ on $K_1$ by defining piecwise affine functions such that $\ov{s_n} = 0$ on $\pa K_1$. Since $Vol(K_1 \setminus C_n)$ is arbitrarily small and $\ov{s_n}$ is bounded on $K_1$, this extension does not affect the value of the integral 
+
+\[
+\int_{\mr^p} G(x) \exp(s_n) 
+\]
+
+asymptotically as $\eps = Vol(K_1 \setminus C_n) \to 0$. Therefore, wlog, we will assume from now on that $s_n$ vanishes on $\pa C_n$. \\
+
+\tb{Extension of $s_n$ to $K$} - Define $\wh{s_n}$ such that $\wh{s_n}(x) = s_n(x)$ for $x \in C_n$ and $\wh{s_n}(x) = 0$ on $C_n^c$. Then $s_n$ is continuous but is in general no longer concave. Define a function on $K$ by 
+
+\[
+g(x) = \wh{s_n}(x) - M \cdot d(x,C_n) 
+\]
+
+\emph{Claim} - There exists an $N$ such that $M \geq N$ implies that $g$ is concave on $K$. Note that the set distance term is identically $0$ on $C_n$ and $\wh{s_n}$ is identically $0$ on $C_n^c$. Moreover, the set distance term is concave, since $x \to d(x,S)$ is a convex function whenever $S$ is a convex set. \\
+
+By concavity of the original Cule function $s_n$ on $C_n$, for each point $x \in C_n$, the subgradient set $\pa s_n(x)$ is non-empty. In fact, from Cule's work we know that $s_n$ has the form 
+
+\begin{align*}
+s_n(x) &= \sum_k (a_k^T x + b_k) I(C_n^k) \quad (x \in C_n) \\
+&= - \infty \quad else
+\end{align*}
+
+Where $C_n^k$ is a triangulation of the convex hull $C_n^k$. We can show that \\
+
+\emph{Lemma} - For a function of the form above, $x \in C_n^k \implies a_k \in \pa s_n(x)$. The only non-trivial part of the argument is dealing with points $x \in \pa C_n^k$. Proof omitted. \\
+
+\tb{Subgradient argument} - To show that our extension $g(x)$ is concave, it suffices to show that $\pa g(x) \not = \emptyset$ for each $x \in K$. Then by concavity of the disjointly supported pieces of $g(x)$, it suffices to show that the subgradient condition is satisfied for each $x \in C_n$, $y \in K \setminus C_n$ and conversely. \\
+
+Consider $x \in C_n$ and $y \in K \setminus C_n$. Let $p_{y^*}$ denote the projection of $y$ onto $C_n$. In our construction of $g(x)$, choose 
+
+\[
+M \geq N = \max_{k} \|a_k\|_2 
+\]
+
+i.e. over all vectors defining the piecewise affine function $s_n$. Then we can calculate as follows 
+
+\begin{align*}
+g(y) - g(x) &= g(y) - g(p_{y^*}) + g(p_{y^*}) - g(x) = -M \|y - p_{y^*}\| + g(p_{y^*}) - g(x) \\
+&\leq -M \|y - p_{y^*}\| + \pa g(x)^T(p_{y^*} - x) = -M \|y - p_{y^*}\| + \pa g(x)^T(p_{y^*} - y +y - x) \\
+&\leq 0 + \pa g(x)^T(y - x) 
+\end{align*}
+
+Note that the $1^{st}$ inequality follows by concavity of $g$ on $C_n$, while the $2^{nd}$ inequality follows from Cauchy-Schwarz and our choice of $M$. A similar argument can be used to show that subgradients of $g$ exist for $x \in K \setminus C_n$. Then $g$ is concave on $K$. \\
+
+By construction, for $M \geq N$ we have that $g$ is a concave function. Note that $x \in \pa K \implies d(x,K) \geq \eps$. Choose $K = C_n^{\eps}$ as previously defined, where $M_{\eps} \cdot \eps = N_{\eps} \to \infty$ as $\eps \to 0$.
+
+
+\tb{Things that I had trouble proving / omitted } \\
+
+** Need to show that $\mc{L}(C_n) < \infty \implies \mc{L}(C_n^1) < \infty $. Note that this immediately implies that $\eps \to \mc{L}(C_n^{\eps} \setminus C_n)$ is a continuous function by standard measure theory arguments - we just need the measure space to be finite. \\
+
+**Argumentation for existence of subgradients on $K \setminus C_n$ omitted. 
+
+
+
+
+
+\end{document}
