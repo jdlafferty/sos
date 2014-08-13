@@ -18,6 +18,15 @@
 # - Added an example with covariates generated from
 #   a correlated Gaussian and with a few sparse components. [example3()]
 #
+# Version 1.2: August 13, 2014
+# - Fixed the objective to be the mean squared error instead of
+#   the square root of it. The 1/n factor is now also there.
+#   Previously there was an issue with Rmosek rotated cones that 
+#   somehow prevented doing this.
+# - Convergence criterion for backfitting is updated: it now stops
+#   if either the L2-difference in the fitted component values is small
+#   OR the difference in mean squared error is small. 
+#
 # ** Please feel free to improve the code and leave a note here. **
 #
 ################################################################################
@@ -88,7 +97,8 @@ convexity.pattern.regression = function (X, y, B = 100, lambda = 1) {
   # pointwise errors (auxiliary): r_i
   # slopes for convexity (auxiliary): beta_ij, gamma_ij (i up to n-1)
   # 0/1 integer variables: z_j, w_j
-  # MSE replacement: t
+  # RQUAD constant 1/2: s
+  # objective (MSE) replacement: t
   f.index = seq(1, n*p) 
   g.index = last(f.index) + seq(1, n*p) 
   u.index = last(g.index) + seq(1, n*p) 
@@ -98,7 +108,8 @@ convexity.pattern.regression = function (X, y, B = 100, lambda = 1) {
   gamma.index = last(beta.index) + seq(1, (n-1)*p)
   z.index = last(gamma.index) + seq(1, p) 
   w.index = last(z.index) + seq(1, p) 
-  t.index = last(w.index) + 1 
+  s.index = last(w.index) + 1
+  t.index = last(s.index) + 1 
   num.vars = t.index
 
   # Helpers: Selecting variables
@@ -118,11 +129,12 @@ convexity.pattern.regression = function (X, y, B = 100, lambda = 1) {
   # Set up the program
   convexity.pattern = list(sense = "min")
 
-  # Objective: t = sqrt(sum(y_i - sum(f_ij+g_ij)))^2))
-  # Note that MSE = (1/n) * (t^2).
-  convexity.pattern$c = c(rep(0, last(gamma.index)), rep(lambda, 2*p), 1)
+  # Objective: (1/n) * t + lambda * sum_j (z_j + w_j)
+  # where t = sum(y_i - sum(f_ij+g_ij)))^2)
+  # Note: MSE = (1/n) * t
+  convexity.pattern$c = c(rep(0, last(gamma.index)), rep(lambda, 2*p), 0, 1/n)
 
-  # Affine constraint 1: auxiliary variables [no cost]
+  # Affine constraint 1: auxiliary variables for residuals [no cost]
   # r_i = y_i - sum_j(f_ij + g_ij)
   
   # number of rows (affine contraints)
@@ -204,7 +216,7 @@ convexity.pattern.regression = function (X, y, B = 100, lambda = 1) {
   A4 = cBind(.sparseDiagonal(p), .sparseDiagonal(p))
   # Add zero columns for unused variables
   A4 = cBind(Matrix(0, nrow = n4, ncol = last(gamma.index)), A4,
-              Matrix(0, nrow = n4, ncol = 1))
+              Matrix(0, nrow = n4, ncol = 2))
 
   # Affine constraint 5: scaling the fits f_ij and g_ij
   #                      into the standard quadratic cone [no cost]
@@ -218,19 +230,30 @@ convexity.pattern.regression = function (X, y, B = 100, lambda = 1) {
   A5[, 1:n5] = .sparseDiagonal(n5)
   A5[, (n5 + 1:n5)] = -sqrt(n)*B*.sparseDiagonal(n5)
 
+  # Affine constraint 6: auxiliary variable for Rmosek rotated cone [no cost]
+  # s = 1/2 
+  
+  # number of rows (affine contraints)
+  n6 = 1
+  
+  A6 = Matrix(0, nrow = n6, ncol = num.vars)
+  A6[, s.index] = 1
+
   # Affine constraints combined with bounds
-  convexity.pattern$A = rBind(A1, A2, A3, A4, A5)
+  convexity.pattern$A = rBind(A1, A2, A3, A4, A5, A6)
   convexity.pattern$bc = rbind(
     blc = c(y, 
             rep(0, n2.part1), rep(0, n2.part2), 
             rep(0, n3), 
             rep(0, n4), 
-            rep(0, n5)),
+            rep(0, n5),
+            rep(1/2, n6)),
     buc = c(y, 
             rep(0, n2.part1), rep(Inf, n2.part2), 
             rep(0, n3), 
             rep(1, n4), 
-            rep(0, n5))
+            rep(0, n5),
+            rep(1/2, n6))
   )
 
   # Constraints on the program variables
@@ -240,11 +263,13 @@ convexity.pattern.regression = function (X, y, B = 100, lambda = 1) {
             rep(-Inf, length(r.index)),
             rep(-Inf, length(c(beta.index, gamma.index))),
             rep(0, length(c(z.index, w.index))), 
+            0, # s
             0), # t
     bux = c(rep(Inf, length(c(f.index, g.index, u.index, v.index))),
             rep(Inf, length(r.index)),
             rep(Inf, length(c(beta.index, gamma.index))),
             rep(1, length(c(z.index, w.index))), 
+            Inf, # s
             Inf) # t
   )
 
@@ -256,7 +281,9 @@ convexity.pattern.regression = function (X, y, B = 100, lambda = 1) {
     function (j) { list("QUAD", c(w.index[j], v.select.col[[j]])) }
   )
   # Conic constraint 2: quadratic objective (mean squared error)
-  cone.obj = cbind(list("QUAD", c(t.index, r.index)))
+  # Note: In Rmosek terms, this is 2*t*s >= sum(r^2)
+  #       where s = 1/2. 
+  cone.obj = cbind(list("RQUAD", c(t.index, s.index, r.index)))
 
   # Combined
   convexity.pattern$cones = cbind(cone.f, cone.g, cone.obj)
@@ -280,8 +307,11 @@ convexity.pattern.regression = function (X, y, B = 100, lambda = 1) {
   pattern = sapply(1:p, function(j) { c(pattern[j], pattern[p+j]) })
   colnames(pattern) = 1:p
   rownames(pattern) = c("convex", "concave")
-  fit = r$sol$int$xx[c(f.index, g.index)]
-  MSE = (1/n) * (r$sol$int$xx[t.index]^2)
+  
+  f = Matrix(r$sol$int$xx[f.index], ncol = p, byrow = TRUE)
+  g = Matrix(r$sol$int$xx[g.index], ncol = p, byrow = TRUE)
+  out = r$sol$int$xx[c(f.index, g.index)]
+  MSE = (1/n) * (r$sol$int$xx[t.index])
 
   print(status)
   print(list(pattern = pattern))
@@ -297,10 +327,10 @@ convexity.pattern.regression = function (X, y, B = 100, lambda = 1) {
 
     if (pattern["convex", j]) {
       # return only f for component j
-      return (fit[f.select.col[[j]]])
+      return (out[f.select.col[[j]]])
     } else if (pattern["concave", j]) {
       # return only g for component j
-      return (fit[g.select.col[[j]]])
+      return (out[g.select.col[[j]]])
     } else {
       return (rep(0, n))
     }
@@ -309,13 +339,13 @@ convexity.pattern.regression = function (X, y, B = 100, lambda = 1) {
   return (list(status = status,
                pattern = pattern,
                fit = sapply(1:p, fit.component),
-               f = Matrix(r$sol$int$xx[f.index], ncol = p, byrow = TRUE),
-               g = Matrix(r$sol$int$xx[g.index], ncol = p, byrow = TRUE),
+               f = f,
+               g = g,
                MSE = MSE,
                r = r))
 }
 
-example1 = function (n = 100, sigma = 0.5, B = 100, lambda = 1) {
+example1 = function (n = 100, sigma = 0.5, B = 100, lambda = 0.1) {
   
   ########################################
   # A sample run with outputs and plots.

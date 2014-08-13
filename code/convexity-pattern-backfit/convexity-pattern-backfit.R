@@ -24,12 +24,21 @@
 #   version (empirically). With larger p, starting points seem to 
 #   matter a lot, as there are cases of runs in which the size of update 
 #   simply blows up.
-# 
+#
+# Version 1.1: August 13, 2014
+# - Fixed the objective to be the mean squared error instead of
+#   the square root of it. The 1/n factor is now also there.
+#   Previously there was an issue with Rmosek rotated cones that 
+#   somehow prevented doing this.
+# - Convergence criterion for backfitting is updated: it now stops
+#   if either the L2-difference in the fitted component values is small
+#   OR the difference in mean squared error is small. 
+#
 # ** Please feel free to improve the code and leave a note here. **
 #
 ################################################################################
 
-convexity.pattern.regression.1d = function (x, y, B = 10, lambda = 1) {
+convexity.pattern.regression.1d = function (x, y, B = 10, lambda = 0.1) {
   
   ########################################
   #
@@ -85,7 +94,7 @@ convexity.pattern.regression.1d = function (x, y, B = 10, lambda = 1) {
   }
 
   # [Program variables]
-  # Number of variables: 7n + 1
+  # Number of variables: 7n + 2
   # "Effective" number of variables: 2n + 3
   # Number of integer variables: 2
   # For i = 1, ..., n and j = 1, ..., p,
@@ -94,7 +103,8 @@ convexity.pattern.regression.1d = function (x, y, B = 10, lambda = 1) {
   # pointwise errors (auxiliary): r_i
   # slopes for convexity (auxiliary): beta_i, gamma_i (i up to n-1)
   # 0/1 integer variables: z, w
-  # objective replacement: t
+  # RQUAD constant 1/2: s
+  # objective (MSE) replacement: t
   f.index = seq(1, n)
   g.index = last(f.index) + seq(1, n) 
   u.index = last(g.index) + seq(1, n)
@@ -104,18 +114,19 @@ convexity.pattern.regression.1d = function (x, y, B = 10, lambda = 1) {
   gamma.index = last(beta.index) + seq(1, n-1)
   z.index = last(gamma.index) + 1
   w.index = last(z.index) + 1
-  t.index = last(w.index) + 1 
+  s.index = last(w.index) + 1
+  t.index = last(s.index) + 1 
   num.vars = t.index
 
   # Set up the program
   convexity.pattern = list(sense = "min")
 
-  # Objective: t + lambda * (z + w)
-  # where t = sqrt(sum((y_i - (f_i + g_i))^2))
-  # Note that MSE = (1/n) * (t^2).
-  convexity.pattern$c = c(rep(0, last(w.index)), 1)
+  # Objective: (1/n)*t + lambda * (z + w)
+  # where t = sum((y_i - (f_i + g_i))^2)
+  # Note: MSE = (1/n) * t
+  convexity.pattern$c = c(rep(0, last(gamma.index)), lambda, lambda, 0, 1/n)
 
-  # Affine constraint 1: auxiliary variables [no cost]
+  # Affine constraint 1: auxiliary variables for residuals [no cost]
   # r_i = y_i - (f_i + g_i), that is
   # f_i + g_i + r_i = y_i
   
@@ -195,20 +206,31 @@ convexity.pattern.regression.1d = function (x, y, B = 10, lambda = 1) {
   A5 = Matrix(0, nrow = n5, ncol = num.vars)
   A5[, 1:n5] = .sparseDiagonal(n5)
   A5[, (n5 + 1:n5)] = -sqrt(n)*B*.sparseDiagonal(n5)
+  
+  # Affine constraint 6: auxiliary variable for Rmosek rotated cone [no cost]
+  # s = 1/2 
+  
+  # number of rows (affine contraints)
+  n6 = 1
+  
+  A6 = Matrix(0, nrow = n6, ncol = num.vars)
+  A6[, s.index] = 1
 
   # Affine constraints combined with bounds
-  convexity.pattern$A = rBind(A1, A2, A3, A4, A5)
+  convexity.pattern$A = rBind(A1, A2, A3, A4, A5, A6)
   convexity.pattern$bc = rbind(
     blc = c(y, 
             rep(0, n2.part1), rep(0, n2.part2), 
             rep(0, n3), 
             rep(0, n4), 
-            rep(0, n5)),
+            rep(0, n5),
+            rep(1/2, n6)),
     buc = c(y, 
             rep(0, n2.part1), rep(Inf, n2.part2), 
             rep(0, n3), 
             rep(1, n4),
-            rep(0, n5))
+            rep(0, n5),
+            rep(1/2, n6))
   )
 
   # Constraints on the program variables
@@ -218,11 +240,13 @@ convexity.pattern.regression.1d = function (x, y, B = 10, lambda = 1) {
             rep(-Inf, length(r.index)),
             rep(-Inf, length(c(beta.index, gamma.index))),
             rep(0, length(c(z.index, w.index))), 
+            0, # s
             0), # t
     bux = c(rep(Inf, length(c(f.index, g.index, u.index, v.index))),
             rep(Inf, length(r.index)),
             rep(Inf, length(c(beta.index, gamma.index))),
             rep(1, length(c(z.index, w.index))), 
+            Inf, # s
             Inf) # t
   )
 
@@ -232,7 +256,9 @@ convexity.pattern.regression.1d = function (x, y, B = 10, lambda = 1) {
   cone.g = list("QUAD", c(w.index, v.index)
   )
   # Conic constraint 2: quadratic objective (mean squared error)
-  cone.obj = cbind(list("QUAD", c(t.index, r.index)))
+  # Note: In Rmosek terms, this is 2*t*s >= sum(r^2)
+  #       where s = 1/2. 
+  cone.obj = cbind(list("RQUAD", c(t.index, s.index, r.index)))
 
   # Combined
   convexity.pattern$cones = cbind(cone.f, cone.g, cone.obj)
@@ -258,7 +284,7 @@ convexity.pattern.regression.1d = function (x, y, B = 10, lambda = 1) {
   
   f = r$sol$int$xx[f.index][invPerm(ord)]
   g = r$sol$int$xx[g.index][invPerm(ord)]
-  MSE = (1/n) * (r$sol$int$xx[t.index]^2)
+  MSE = (1/n) * (r$sol$int$xx[t.index])
 
   print(status)
   print(list(pattern = pattern))
@@ -279,7 +305,7 @@ convexity.pattern.regression.1d = function (x, y, B = 10, lambda = 1) {
                r = r))  
 }
 
-example.1d = function (n = 300, sigma = 1, B = 10, lambda = 1) {
+example.1d = function (n = 300, sigma = 1, B = 10, lambda = 0.1) {
 
   ########################################
   # Testing the univariate convexity
@@ -352,7 +378,7 @@ convexity.pattern.backfit = function (X, y, B = 10, lambda = 1,
   new.pattern = matrix(0, 2, p)
   rownames(new.pattern) = c("convex", "concave")
   colnames(new.pattern) = 1:p
-  new.MSE = 0
+  new.MSE = Inf
   
   # Set a random visiting order
   visit.order = sample(p, p, replace = FALSE)
@@ -422,7 +448,7 @@ convexity.pattern.backfit = function (X, y, B = 10, lambda = 1,
 
 }
 
-backfit.example1 = function (n = 100, sigma = 1, B = 10, lambda = 1, 
+backfit.example1 = function (n = 100, sigma = 1, B = 10, lambda = 0.1, 
                           max.step = 30, tol = 1e-5) {
   
   ########################################
@@ -548,8 +574,8 @@ backfit.example1 = function (n = 100, sigma = 1, B = 10, lambda = 1,
 
 }
 
-backfit.example2 = function (n = 100, sigma = 1, B = 10, lambda = 1, 
-                             max.step = 20, tol = 1e-5) {
+backfit.example2 = function (n = 100, sigma = 1, B = 10, lambda = 0.1, 
+                             max.step = 10, tol = 1e-5) {
   
   ########################################
   # A sample run with the same example2
@@ -621,8 +647,8 @@ backfit.example2 = function (n = 100, sigma = 1, B = 10, lambda = 1,
          pch = c(21, 20, 20, 20, 20))
 }
 
-backfit.example3 = function (n = 100, sigma = 1, B = 10, lambda = 1, 
-                             max.step = 10, tol = 1e-5) {
+backfit.example3 = function (n = 100, p = 10, sigma = 1, B = 10, lambda = 1, 
+                             max.step = 5, tol = 1e-5) {
   
   ########################################
   # A sample run with the same example3
@@ -637,9 +663,6 @@ backfit.example3 = function (n = 100, sigma = 1, B = 10, lambda = 1,
   if (!require("MASS")) {
     stop ("MASS not installed.")
   }
-  
-  # Fix dimension = 50
-  p = 50
   
   # X: n by p design matrix, y: function values (n-vector)
   
