@@ -1,0 +1,379 @@
+%\documentclass[psamsfonts]{amsart}
+\documentclass[psamsfonts]{article}
+
+%-------Packages---------
+\usepackage{amsmath,amsfonts,amsthm,amssymb}
+\usepackage[all,arc]{xy}
+\usepackage{enumerate}
+\usepackage{mathrsfs}
+
+%--------Theorem Environments--------
+%theoremstyle{plain} --- default
+\newtheorem{thm}{Theorem} %[section]
+\newtheorem{cor}[thm]{Corollary}
+\newtheorem{prop}[thm]{Proposition}
+\newtheorem{lem}[thm]{Lemma}
+\newtheorem{conj}[thm]{Conjecture}
+\newtheorem{quest}[thm]{Question}
+
+\theoremstyle{definition}
+\newtheorem{defn}[thm]{Definition}
+\newtheorem{defns}[thm]{Definitions}
+\newtheorem{con}[thm]{Construction}
+\newtheorem{exmp}[thm]{Example}
+\newtheorem{exmps}[thm]{Examples}
+\newtheorem{notn}[thm]{Notation}
+\newtheorem{notns}[thm]{Notations}
+\newtheorem{addm}[thm]{Addendum}
+\newtheorem{exer}[thm]{Exercise}
+
+\theoremstyle{remark}
+\newtheorem*{rem}{Remark}
+\newtheorem*{rems}{Remarks}
+\newtheorem*{warn}{Warning}
+\newtheorem*{sch}{Scholium}
+
+
+
+\makeatletter
+%\let\c@equation\c@thm
+\makeatother
+
+\numberwithin{equation} {section}
+
+\bibliographystyle{plain}
+
+%--------Meta Data: Fill in your info------
+\title{Biased Stochastic Gradient Methods for Log-sos-concave Desity Estimation}
+
+\author{Wei Hu}
+
+%\date{Aug 10, 2014}
+
+\begin{document}
+
+%\begin{abstract}
+
+
+%\end{abstract}
+
+\maketitle
+
+%\tableofcontents
+
+\section{Introduction}
+
+In this note, we present the analysis of convergence rates of biased stochastic gradient methods that could be used to calculate our log-sos-concave density estimator.
+
+Recall that our objective function to minimize is
+\begin{equation}\label{problem}
+g(\theta) = \frac{1}{n} \theta^T \sum_{i = 1}^n v_d( x_i) + \log \int_K e^{-\theta^T v_d(x)} dx,\qquad \theta \in \Theta_d
+\end{equation}
+where $\Theta_d$ is the set of coeffients $\theta \in \mathbb R^s(s={p + d \choose d})$ such that $\theta^T v_d(x)$ is an sos-convex polynomial, which is a closed convex set. The gradient and Hessian of $g$ are
+\begin{align*}
+\nabla g(\theta) &= \frac{1}{n} \sum_{i = 1}^n v_d( x_i) - \mathbb E_\theta(v_d(X)),\\
+\nabla^2 g(\theta) &= \mathbb V_\theta (v_d(X)),
+\end{align*}
+where the expectation and covariance are taken with respect to the distribution $p_\theta(x) \propto e^{-\theta^T v_d(x)}$ whose support is a bounded set $K \subseteq [-R, R]^p$ for some $R>0$. Since $\nabla^2 g(\theta) \succeq 0, \forall \theta$, $g$ is a convex function.
+
+\section{Algorithm and Assumptions}
+Consider a convex optimization problem
+
+\begin{equation}\label{opt-prob}
+\begin{aligned}
+\text{minimize} \qquad  &  g(\theta)\\
+\text{s.t.}   \qquad &   \theta \in \Theta.
+\end{aligned}
+\end{equation}
+
+The (projected) stochastic gradient method generates a sequence of feasible points $\{\theta_k\}_{k \ge 1}$ through the iterations
+\begin{equation}\label{stoc-grad-iteration}
+\theta_{k + 1} = \Pi_{\Theta} (\theta_k - \alpha_k (\nabla g(\theta_k) + \xi_k)), \qquad k = 1, 2, \cdots
+\end{equation}
+where $\Pi_{\Theta}$ is the projection operator onto $\Theta $, $\{\alpha_k\}$ is a deterministic positive sequence of step sizes, and $\xi_k$ is the error in the evaluation of the gradient.
+
+For our problem, the projection can be formulated as a semi-definite program, which can be solved efficiently. The evaluation of the gradient is through sampling, which is efficient for log-concave distribution.
+
+The following is a list of assumptions that we will use: (we use $\|\cdot \|$ for 2-norm)
+\begin{enumerate}[(H1)]
+\item \eqref{opt-prob} has an optimal solution $\theta^*$.
+\item $g$ is Lipschitz continuous, i.e., $\| \nabla g(\theta) \| \le M, \forall \theta$.
+\item The error does not change the Lipschitz continuity of $g$, i.e., $\| \nabla g(\theta_k) + \xi_k \| \le M, \forall k$.
+\item $\nabla g$ is Lipschitz continuous, i.e., $\| \nabla g(\theta) - \nabla g(\eta) \| \le L \| \theta - \eta \|, \forall \theta, \eta$.
+\item Each visited point is at a bounded distance from the optimal point, i.e., $ \| \theta_k - \theta^* \| \le D, \forall k$. 
+\end{enumerate}
+
+For our specific problem, we have the following proposition:
+\begin{prop}
+For our problem \eqref{problem}, (H1), (H2), (H3) and (H4) are true.
+\end{prop}
+\begin{proof}
+(1) Because $\Theta_d$ is a closed convex set and $g$ is a convex function, $g(\theta)$ attains its minimum on $\Theta_d$. (H1) is true.\\
+(2) Since $K \in [-R, R]^p$, we have $v(x) \in [-R^d, R^d]^s$ for all $x\in K$. Hence $\frac{1}{n} \sum_{i = 1}^n v_d( x_i) \in [-R^d, R^d]^s$ and $\mathbb E_\theta(v_d(X)) \in [-R^d, R^d]^s$, which implies
+$$\nabla g(\theta) = \frac{1}{n} \sum_{i = 1}^n v_d(x_i) - \mathbb E_\theta(v_d(X)) \in[-2R^d, 2R^d]^s.$$
+Therefore $$\|\nabla g(\theta) \| \le \sqrt{s(2R^d)^2}=2R^d\sqrt{s}.$$
+
+Let $M = 2R^d\sqrt{s} = 2R^d\sqrt{p+d \choose d}$, then (H2) is true.\\
+(3) Suppose we estimate the gradient $\nabla g(\theta_k)$ by samples $x^{(1)}, x^{(2)}, \cdots, x^{(t)} \in K$, then their average $\frac{1}{t}\sum_{i=1}^t v(x^{i}) \in[-R^d, R^d]^s$ and
+$$\nabla g(\theta_k) + \xi_k = \frac{1}{n} \sum_{i = 1}^n v_d(x_i) - \frac{1}{t}\sum_{i=1}^t v(x^{i}) \in[-2R^d, 2R^d]^s.$$
+
+Same as (2), we know that (H3) is true.\\
+(4) To prove (H4), it suffices to prove that every eigenvalue of $\nabla^2 g(\theta)$ is at most $L$.
+
+Each entry of $\nabla^2 g(\theta)$ has the form $\mathbb E_\theta(X^{\alpha+\beta}) - E_\theta(X^\alpha)E_\theta(X^\beta)$, where $\alpha$ and $\beta$ are the multi-indices of monomials in $p$ variables of degree at most $d$. So we have $\mathbb E_\theta(X^{\alpha+\beta}) - E_\theta(X^\alpha)E_\theta(X^\beta) \in [-2R^{2d}, 2R^{2d}]$.
+
+By Gershgorin circle theorem, for any eigenvalue $\lambda$ of $\nabla^2 g(\theta)$, there exists some row $\alpha$ such that
+\[
+|\lambda - (\nabla^2 g(\theta))_{\alpha, \alpha}| \le \sum_{\beta\not=\alpha}|(\nabla^2 g(\theta))_{\alpha, \beta}|,
+\]
+which implies
+\[
+\lambda \le \sum_\beta |(\nabla^2 g(\theta))_{\alpha, \beta}| \le s\cdot 2R^{2d}.
+\]
+
+Let $L = s\cdot 2R^{2d} = 2R^{2d}{p+d \choose d}$, then (H4) is true.\\
+\end{proof}
+\begin{rem}
+Although we are unable to verify the correctness of (H5) for our problem, my idea is that we can assume the existence of some $D$ such that (H5) is true.
+\end{rem}
+
+\section{Convergence Rate for Deterministic Errors}
+
+In this section, we regard the errors $\xi_k$ are deterministic vectors and give convergence rate analyses for two types of step size choices. The first method is similar in \cite{ising} and relies on (H1), (H2), (H3) and (H5); the second is directly from \cite{prox} and relies on (H1), (H2), (H3) and (H4).
+
+The results are summarized as the following theorems.
+
+\begin{thm}
+Assume (H1), (H2), (H3) and (H5), then we have
+\begin{equation}\label{weighted-avg-bound}
+g(\tilde{\theta}_N) - g(\theta^*) \le \frac{\frac{1}{2}D^2 + D\sum_{k=1}^N \alpha_k \|\xi_k\| + \frac{1}{2}M^2\sum_{k=1}^N \alpha_k^2}{\sum_{k=1}^N \alpha_k}.
+\end{equation}
+Further, if the sequence of step sizes $\{\alpha_k\}$ is decreasing, then
+\begin{equation}\label{unweighted-avg-bound}
+g(\bar{\theta}_N) - g(\theta^*) \le \frac{D^2}{2N\alpha_N} + D\frac{\sum_{k=1}^N \|\xi_k\|}{N} + \frac{M^2}{2N}\sum_{k=1}^N \alpha_k
+\end{equation}
+where $\tilde{\theta}_N = \frac{\sum_{k = 1}^N \alpha_k \theta_k}{\sum_{k = 1}^N \alpha_k}$ and $\bar{\theta}_N = \frac{\sum_{k = 1}^N \theta_k}{N}$ are the weighted and unweighted average of all visited points.
+\end{thm}
+
+\begin{proof}
+We know that the projection operator is non-expansive, i.e.,
+\[
+\| \Pi_\Theta(\theta) - \Pi_\Theta(\eta) \| \le \| \theta - \eta \|, \qquad \forall \theta, \eta.
+\]
+
+Then we have
+\begin{equation}\label{ineq0}
+\begin{aligned}
+\| \theta_{k + 1} - \theta^* \|^2 & = \| \Pi_\Theta(\theta_k - \alpha_k (\nabla g(\theta_k) + \xi_k))) - \theta^* \|^2 \\
+& = \| \Pi_\Theta(\theta_k - \alpha_k (\nabla g(\theta_k) + \xi_k))) - \Pi_\Theta(\theta^*) \|^2\\
+& \le \| \theta_k - \alpha_k (\nabla g(\theta_k) + \xi_k) - \theta^* \|^2\\
+& = \| \theta_k - \theta^* \|^2 - 2\alpha_k (\nabla g(\theta_k) + \xi_k)^T (\theta_k - \theta^*) + \alpha_k^2 \|\nabla g(\theta_k) + \xi_k\|^2\\
+& = \| \theta_k - \theta^* \|^2 - 2\alpha_k \nabla g(\theta_k)^T (\theta_k - \theta^*) - 2\alpha_k \xi_k^T(\theta_k - \theta^*) + \alpha_k^2 \|\nabla g(\theta_k) + \xi_k\|^2.
+\end{aligned}
+\end{equation}
+
+By the convexity of $g$, we have $\nabla g(\theta_k)^T (\theta_k - \theta^*) \ge g(\theta_k) - g(\theta^*)$. By Cauchy-Schwarz inequality and (H5), we have $-\xi_k^T(\theta_k - \theta^*) \le D \|\xi_k\|$. By (H3) we have $\|\nabla g(\theta_k) + \xi_k\|^2 \le M^2$. Putting them together, we obtain
+\begin{equation}\label{ineq1}
+\begin{aligned}
+\| \theta_{k + 1} - \theta^* \|^2 & \le \| \theta_k - \theta^* \|^2 - 2\alpha_k (g(\theta_k) - g(\theta^*)) + 2\alpha_k D \|\xi_k\| + \alpha_k^2 M^2
+\end{aligned}
+\end{equation}
+or equivalently
+\begin{equation}\label{ineq2}
+\alpha_k (g(\theta_k) - g(\theta^*))  \le \frac{1}{2} (\|\theta_k - \theta^* \|^2 - \| \theta_{k+1} - \theta^* \|^2)  + \alpha_k D \|\xi_k\| + \frac{1}{2}\alpha_k^2 M^2.
+\end{equation}\\
+(I) Proof of \eqref{weighted-avg-bound}
+
+Sum \eqref{ineq2} for $k=1, \cdots, N$, then we get
+\begin{equation*}
+\begin{aligned}
+\sum_{k=1}^N \alpha_k (g(\theta_k) - g(\theta^*)) &\le \frac{1}{2} (\|\theta_1 - \theta^* \|^2 - \| \theta_{N+1} - \theta^* \|^2) + D\sum_{k=1}^N \alpha_k \|\xi_k\| + \frac{1}{2}M^2\sum_{k=1}^N \alpha_k^2\\
+&\le \frac{1}{2}D^2 + D\sum_{k=1}^N \alpha_k \|\xi_k\| + \frac{1}{2}M^2\sum_{k=1}^N \alpha_k^2.
+\end{aligned}
+\end{equation*}
+
+Therefore
+\begin{equation}\label{ineq3}
+\begin{aligned}
+g(\tilde\theta_N) - g(\theta^*) &= g(\frac{\sum_{k = 1}^N \alpha_k \theta_k}{\sum_{k = 1}^N \alpha_k}) - g(\theta^*) \le \frac{\sum_{k=1}^N \alpha_k g(\theta_k)}{\sum_{k=1}^N \alpha_k} - g(\theta^*) = \frac{\sum_{k=1}^N \alpha_k (g(\theta_k) - g(\theta^*))}{\sum_{k=1}^N \alpha_k}\\
+&\le \frac{\frac{1}{2}D^2 + D\sum_{k=1}^N \alpha_k \|\xi_k\| + \frac{1}{2}M^2\sum_{k=1}^N \alpha_k^2}{\sum_{k=1}^N \alpha_k}.
+\end{aligned}
+\end{equation}
+(II) Proof of \eqref{unweighted-avg-bound}
+
+From \eqref{ineq2} we have
+\begin{equation}\label{ineq4}
+g(\theta_k) - g(\theta^*)  \le \frac{1}{2\alpha_k} (\|\theta_k - \theta^* \|^2 - \| \theta_{k+1} - \theta^* \|^2)  + D \|\xi_k\| + \frac{1}{2}\alpha_k M^2.
+\end{equation}
+
+Sum \eqref{ineq4} for $k=1, \cdots, N$, then we get (note that $\{\alpha_k\}$ is decreasing)
+\begin{equation*}
+\begin{aligned}
+\sum_{k=1}^N (g(\theta_k) - g(\theta^*)) &\le \sum_{k=1}^N \frac{1}{2\alpha_k} (\|\theta_k - \theta^* \|^2 - \| \theta_{k+1} - \theta^* \|^2) + D\sum_{k=1}^N \|\xi_k\| + \frac{1}{2}M^2\sum_{k=1}^N \alpha_k\\
+&= \frac{\|\theta_1 - \theta^* \|^2}{2\alpha_1} + \sum_{k=2}^N (\frac{1}{2\alpha_k}-\frac{1}{2\alpha_{k-1}}) \|\theta_k - \theta^* \|^2 - \frac{\|\theta_{N+1} - \theta^* \|^2}{2\alpha_N} + D\sum_{k=1}^N \|\xi_k\| + \frac{1}{2}M^2\sum_{k=1}^N \alpha_k\\
+&\le \frac{D^2}{2\alpha_1} + \sum_{k=2}^N (\frac{1}{2\alpha_k}-\frac{1}{2\alpha_{k-1}}) D^2 + D\sum_{k=1}^N \|\xi_k\| + \frac{1}{2}M^2\sum_{k=1}^N \alpha_k\\
+&= \frac{D^2}{2\alpha_N} + D\sum_{k=1}^N \|\xi_k\| + \frac{1}{2}M^2\sum_{k=1}^N \alpha_k.
+\end{aligned}
+\end{equation*}
+
+Therefore
+\begin{equation}\label{ineq5}
+\begin{aligned}
+g(\bar\theta_N) - g(\theta^*) &= g(\frac{\sum_{k = 1}^N \theta_k}{N}) - g(\theta^*) \le \frac{\sum_{k=1}^N g(\theta_k)}{N} - g(\theta^*) = \frac{\sum_{k=1}^N (g(\theta_k) - g(\theta^*))}{N}\\
+&\le \frac{D^2}{2N\alpha_N} + D\frac{\sum_{k=1}^N \|\xi_k\|}{N} + \frac{M^2}{2N}\sum_{k=1}^N \alpha_k.
+\end{aligned}
+\end{equation}
+\end{proof}
+
+\begin{cor}
+Assume (H1), (H2), (H3) and (H5). For step sizes $\alpha_k = \frac{\beta}{Mk^r}(k = 1, \cdots, N)$ for some $0 < r < 1, \beta > 0$, we have
+\begin{equation}\label{weighted-avg-bound-cor}
+g(\tilde{\theta}_N) - g(\theta^*) \le \frac{MD^2}{2\beta \sum_{k = 1}^N k^{-r}} + D\frac{\sum_{k=1}^{N}k^{-r} \| \xi_k \|}{\sum_{k=1}^{N}k^{-r}} + \frac{\beta M \sum_{k = 1}^N k^{-2r}}{2\sum_{k = 1}^N k^{-r}}
+\end{equation}
+and
+\begin{equation}\label{unweighted-avg-bound-cor}
+g(\bar{\theta}_N) - g(\theta^*) \le \frac{MD^2}{2\beta N^{1-r}} + D\frac{\sum_{k=1}^{N} \| \xi_k \|}{N} + \frac{\beta M \sum_{k = 1}^N k^{-r}}{2N}
+\end{equation}
+where $\tilde{\theta}_N = \frac{\sum_{k = 1}^N \alpha_k \theta_k}{\sum_{k = 1}^N \alpha_k}$ and $\bar{\theta}_N = \frac{\sum_{k = 1}^N \theta_k}{N}$ are the weighted and unweighted average of all visited points.
+\end{cor}
+
+\begin{proof}
+Plugging $\alpha_k = \frac{\beta}{Mk^r}$ into \eqref{weighted-avg-bound} and \eqref{unweighted-avg-bound}, we get \eqref{weighted-avg-bound-cor} and \eqref{unweighted-avg-bound-cor} respectively.
+\end{proof}
+
+
+\begin{rem}
+If there is no error, i.e., $\xi_k=0(k=1,2,\cdots)$, then both \eqref{weighted-avg-bound} and \eqref{unweighted-avg-bound} achieve optimal asymptotic bound $O(\frac{1}{\sqrt{N}})$ when $r=\frac{1}{2}$.
+\end{rem}
+
+The following two theorems for basic and accelarated proximal-gradient methods are from \cite{prox}. Since projection is a special case of proximity operator, this method can be applied. The proofs of them are in \cite{prox}.
+
+\begin{thm}(Basic proximal-gradient method)
+Assume (H1), (H2), (H3) and (H4). For step sizes $\alpha_k = \frac{1}{L}(k = 1, \cdots, N)$, we have
+\begin{equation}\label{basic-prox-bound}
+g(\bar{\theta}_{N\setminus 1}) - g(\theta^*) \le \frac{L}{2(N-1)}\big(\|\theta_1 - \theta^* \| + \frac{2}{L} \sum_{k=2}^{N} \|\xi_k\|\big)^2
+\end{equation}
+where $\bar{\theta}_{N\setminus 1} = \frac{\sum_{k=2}^N \theta_k}{N-1}$ is the average of all visited points except $\theta_1$.
+\end{thm}
+
+\begin{thm}(Accelerated proximal-gradient method)
+Assume (H1), (H2), (H3) and (H4). If the algorithm starts from $\theta_1 = \eta_1$, and iterates as
+\begin{equation}\label{acc-prox-iteration}
+\begin{cases}
+\theta_{k+1} = \Pi_\Theta\big(\eta_k - \frac{1}{L}(\nabla g(y_k) + \xi_k)\big)\\
+\eta_{k+1} = \theta_{k+1} + \frac{k-1}{k+2}(\theta_{k+1} - \theta_k), k=1, 2, \cdots
+\end{cases}
+\end{equation}
+then we have
+\begin{equation}\label{acc-prox-bound}
+g(\theta_N) - g(\theta^*) \le \frac{2L}{N^2}\big( \|\theta_1 - \theta^* \|+ \frac{2}{L}\sum_{k=2}^{N} k\|\xi_k\|\big)^2.
+\end{equation}
+\end{thm}
+
+\begin{rem}
+If there is no error, i.e., $\xi_k=0(k=1,2,\cdots)$, then the convergence rates of basic and accelerated proximal-gradient methods are $O(\frac{1}{N})$ and $O(\frac{1}{N^2})$ respectively.
+\end{rem}
+
+\section{Convergence Rate of Expectation for Stochastic Errors}
+
+In this section we will generalize the existing result for unbiased estimation of gradients to the biased case, which is the case if we use MCMC sampling to estimate the gradient.
+
+We make the following assumption:
+\begin{enumerate}[(H6)]
+\item There exists an increasing sequences of $\sigma$-fields $\{\mathcal F_k\}_{k\ge0}$ such that $\theta_k$ is $\mathcal F_{k-1}$-mesurable and $\|\mathbb E(\xi_k|\mathcal F_{k-1}) \| \le e_k$. ($k=1,2,\cdots$)
+\end{enumerate}
+
+Note that for the unbiased case, we have $\epsilon_k=0$. ($k=1,2,\cdots$)
+
+\begin{thm}
+Assume (H1), (H2), (H3), (H5) and (H6), then we have
+\begin{equation}\label{weighted-avg-expect-bound}
+\mathbb E(g(\tilde{\theta}_N) - g(\theta^*)) \le \frac{\frac{1}{2}D^2 + D\sum_{k=1}^N \alpha_k e_k + \frac{1}{2}M^2\sum_{k=1}^N \alpha_k^2}{\sum_{k=1}^N \alpha_k}.
+\end{equation}
+Further, if the sequence of step sizes $\{\alpha_k\}$ is decreasing, then
+\begin{equation}\label{unweighted-avg-expect-bound}
+\mathbb E(g(\bar{\theta}_N) - g(\theta^*)) \le \frac{D^2}{2N\alpha_N} + D\frac{\sum_{k=1}^N e_k}{N} + \frac{M^2}{2N}\sum_{k=1}^N \alpha_k
+\end{equation}
+where $\tilde{\theta}_N = \frac{\sum_{k = 1}^N \alpha_k \theta_k}{\sum_{k = 1}^N \alpha_k}$ and $\bar{\theta}_N = \frac{\sum_{k = 1}^N \theta_k}{N}$ are the weighted and unweighted average of all visited points.
+\end{thm}
+
+\begin{proof}
+Recall that from \eqref{ineq0} we have:
+\begin{equation*}
+\begin{aligned}
+\|\theta_{k+1} - \theta^*\|^2 &\le \|\theta_k - \theta^*\|^2 -2\alpha_k\xi_k^T(\theta_k - \theta^*) + \alpha_k^2\|\nabla g(\theta_k)+\xi_k\|^2\\
+&\le \|\theta_k - \theta^*\|^2 - 2\alpha_k(g(\theta_k)-g(\theta^*)) -2\alpha_k\xi_k^T(\theta_k - \theta^*) + \alpha_k^2M^2.
+\end{aligned}
+\end{equation*}
+
+Taking the expectation of the both sides, we obtain
+\begin{equation}\label{ineq6}
+2\alpha_k\mathbb E(g(\theta_k)-g(\theta^*)) \le \mathbb E\|\theta_k - \theta^*\|^2 - \mathbb E\|\theta_{k+1} - \theta^*\|^2 - 2\alpha_k\mathbb E(\xi_k^T(\theta_k - \theta^*)) + \alpha_k^2M^2.
+\end{equation}
+
+From (H6) we have
+\begin{equation*}
+\begin{aligned}
+\|\mathbb E(\xi_k^T(\theta_k - \theta^*))\| &= \|\mathbb E(\mathbb E(\xi_k^T(\theta_k - \theta^*)|\mathcal F_{k-1}))\| = \|\mathbb E\big(\mathbb E(\xi_k^T|\mathcal F_{k-1})(\theta_k - \theta^*)\big)\|\\
+&\le \| \mathbb E(De_k)  \| = De_k,
+\end{aligned}
+\end{equation*}
+then \eqref{ineq6} implies
+\begin{equation}\label{ineq7}
+2\alpha_k\mathbb E(g(\theta_k)-g(\theta^*)) \le \mathbb E\|\theta_k - \theta^*\|^2 - \mathbb E\|\theta_{k+1} - \theta^*\|^2 + 2\alpha_kDe_k + \alpha_k^2M^2.
+\end{equation}
+
+Then the proof goes exactly the same as the proof of Theorem 2, except that we use \eqref{ineq7} in replace of \eqref{ineq1}. The proof is done.
+\end{proof}
+
+\begin{rem}
+\eqref{weighted-avg-expect-bound} is a generalization of (2.18.a) in \cite{robust-sa}, where unbiased estimation, i.e., $e_k=0$, is assumed.
+\end{rem}
+
+In our problem, if we use the sampling technique in \cite{time-varying-sample} to estimate the gradients, we can obtain the bound $e_k$ as follows. Following \cite{time-varying-sample}, suppose a sequence of log-concave distributions $\mu_1, \mu_2, \cdots$ is tracked, which correspond to our distributions $p_{\theta_1}, p_{\theta_2}, \cdots$. When the Markov chain is runned for sampling from $\mu_k$, we can run the chain for enough steps to ensure the closeness in total variation distance from the current distribution $\hat{\mu}_k$ on the chain to $\mu_k$, i.e.,
+\begin{equation}\label{tv-bound}
+\int_{K}\big| d\hat{\mu}_k - d\mu_k\big| \le \varepsilon_k.
+\end{equation}
+If we start taking samples $x^{(1)}, x^{(2)}, \cdots, x^{(t)}$ from now (assume that $t$ is deterministic), where $x^{(i)}$ is taken from distribution $\hat{\mu}_k^{(i)}$ ($i=1,2,\cdots,t$), then each $\hat{\mu}_k^{(i)}$ satisfies \eqref{tv-bound}. So
+\begin{equation}
+\begin{aligned}
+\|\mathbb E(\xi_k|\mathcal F_{k-1}) \| &= \| \mathbb E(\frac{1}{t}\sum_{i=1}^t v(x^{(i)})|\mathcal F_{k-1}) - \mathbb E_{\theta_k}(v(X)) \|\\
+&= \|\frac{1}{t}\sum_{i=1}^t\int_K v(x)d\hat{\mu}_k^{(i)} - \int_K v(x)d\mu_k\|\\
+&\le \frac{1}{t}\sum_{i=1}^t \|\int_K v(x)(d\hat{\mu}_k^{(i)} - d\mu_k)\|\\
+&\le \frac{1}{t}\sum_{i=1}^t \int_K \|v(x)\| |d\hat{\mu}_k^{(i)} - d\mu_k|\\
+&\le \frac{1}{t}\sum_{i=1}^t \int_K \sqrt{s(R^d)^2} |d\hat{\mu}_k^{(i)} - d\mu_k|\\
+&= R^d\sqrt{s} \frac{1}{t}\sum_{i=1}^t \int_K|d\hat{\mu}_k^{(i)} - d\mu_k|\\
+&\le R^d\sqrt{s}\varepsilon_k.
+\end{aligned}
+\end{equation}
+
+Let $e_k = R^d\sqrt{s}\varepsilon_k = R^d\sqrt{p+d\choose d}\varepsilon_k$. We can make $\varepsilon_k$ small enough to make $e_k$ small.
+
+
+
+\begin{thebibliography}{9}
+
+\bibitem{ising}
+Honorio J.
+Convergence rates of biased stochastic optimization for learning sparse Ising models.
+\emph{ICML}, 2012
+
+\bibitem{prox}
+Schmidt, M., Le Roux, N., and Bach, F.
+Convergence rates of inexact proximal-gradient methods for convex optimization.
+\emph{NIPS}, 2011.
+
+\bibitem{robust-sa}
+Nemirovski, A., Juditsky, A., Lan, G., and Shapiro, A.
+Robust stochastic approximation approach to stochastic programming.
+\emph{SIAM Journal on Optimization}, 2009.
+
+\bibitem{time-varying-sample}
+Narayanan, H., and Rakhlin, A.
+Efficient sampling from time-varying log-concave distributions.
+\emph{aiXiv:1309.5977v1}, 2013.
+
+\end{thebibliography}
+
+\end{document}
+
