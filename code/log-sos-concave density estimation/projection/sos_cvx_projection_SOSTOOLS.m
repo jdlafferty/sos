@@ -11,7 +11,7 @@
 %
 
 echo on;
-p = 2; d = 4;  % p: dimension    d: degree (even)
+p = 1; d = 6;  % p: dimension    d: degree (even)
 s = nchoosek(p+d, d);  % s: number of monomials in p variables of degree at most d
 gamma = 10*rand(s, 1); % gamma: a random coefficient vector
 %  we want to find the projection from gamma to sos-convex cone
