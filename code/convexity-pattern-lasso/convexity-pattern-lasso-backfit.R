@@ -14,20 +14,27 @@
 #   where each 1-D fit is given by the convex program formulation
 #   of the 1-D convexity pattern regression. 
 # - Try example() for demos with random examples.
-
+# Version 1.1: August 14, 2014
+# - Renamed the function to be convexity.pattern.lasso.backfit() and
+#   the filename to be convexity-pattern-lasso-backfit.R.
+# - lambda is now a parameter again. The backfitting version is not
+#   as great with the lasso formulation because of sensitivity to lambda
+#   that is different to each component.
+#
 # ** Please feel free to improve the code and leave a note here. **
 #
 ################################################################################
 
 # Change this to the location of your local repository (must end with /)
-SOURCE_DIRECTORY = "~/sos/"
+SOURCE_DIRECTORY = "~/Code/sos-convexity/sos/"
 
-# Source the 1-D version (convexity.pattern.cvx.1d.auto)
+# Source the 1-D version (convexity.pattern.lasso.1d.auto)
 source(paste(SOURCE_DIRECTORY, 
-             "code/convexity-pattern-cvx/convexity-pattern-cvx-1d.R", sep = ""))
+             "code/convexity-pattern-cvx/convexity-pattern-lasso-1d.R", sep = ""))
 
-convexity.pattern.cvx.backfit = function (X, y, step = 0.01, 
-                                          max.step = 20, tol = 1e-5) {
+convexity.pattern.lasso.backfit = function (X, y, lambda = 0.1,
+                                            max.step = 20, tol = 1e-5,
+                                            silent = FALSE) {
   
   ########################################
   #
@@ -38,9 +45,10 @@ convexity.pattern.cvx.backfit = function (X, y, step = 0.01,
   # [Inputs]
   # X: n by p design matrix (covariates)
   # y: n-vector (outcomes, centered)
-  # step: positive scalar (accuracy of lambda)
+  # lambda: positive scalar (sparsity&smoothness parameter)
   # max.step: positive integer (# iterations)
   # tol: positive scalar (tolerance for convergence)
+  # silent: TRUE or FALSE (print-outs to stdout)
   #
   # [Output]
   # a list consisting of...
@@ -97,7 +105,7 @@ convexity.pattern.cvx.backfit = function (X, y, step = 0.01,
       
       # Note: The resulting fit is centered because of
       #       affine constraint 3 in the 1-D program
-      result = convexity.pattern.cvx.1d.auto(X[,j], residual, step)
+      result = convexity.pattern.lasso.1d(X[,j], residual, lambda)
       
       # Update
       new.fit[,j] = result$fit
@@ -111,22 +119,27 @@ convexity.pattern.cvx.backfit = function (X, y, step = 0.01,
     
     # stoping criterion: L2-distance between current and new fitted values 
     #                    or change in mean squared error is small
-    if (current.MSE < new.MSE) {
-      cat("Warning: the objective (mean squared error) increased.\n")
-    }
-    else if (L2.distance <= tol || current.MSE - new.MSE <= tol) {
+    if (L2.distance <= tol || current.MSE - new.MSE <= tol) {
       break
     }
-    cat(sprintf("Iteration %d: L2-distance=%f\n", iter, L2.distance))
-    cat(sprintf("Mean Squared Error=%f\n", new.MSE))
-    cat("========================================\n")
+    
+    if (!silent) {
+      if (current.MSE < new.MSE) {
+        cat("Warning: the objective (mean squared error) increased.\n")
+      }
+      cat(sprintf("Iteration %d: L2-distance=%f\n", iter, L2.distance))
+      cat(sprintf("Mean Squared Error=%f\n", new.MSE))
+      cat("========================================\n")
+    }
     
   }
   
-  if (iter < max.step) {
-    cat(sprintf("Converged in %d iterations!\n", iter))
-  } else {
-    cat("Maximum steps reached before convergence.\n")
+  if (!silent) {
+    if (iter < max.step) {
+      cat(sprintf("Converged in %d iterations!\n", iter))
+    } else {
+      cat("Maximum steps reached before convergence.\n")
+    }
   }
   
   return (list(fit = new.fit,
@@ -140,13 +153,15 @@ convexity.pattern.cvx.backfit = function (X, y, step = 0.01,
 source(paste(SOURCE_DIRECTORY, "code/tools/cvx-generator.R", sep = ""))
 # Source the plotting function (plot.components)
 source(paste(SOURCE_DIRECTORY, "code/tools/plot-components.R", sep = ""))
-             
+
 example = function (n = 300, pattern = c(-1, 1, 1, 0, -1), 
-                    step = 0.01, max.step = 20) {
+                    lambda = 0.2, max.step = 20) {
 	
 	data = cvx.generator(n, pattern = pattern)
-	result = convexity.pattern.cvx.backfit(data$X, data$y, 
-	                                       step = step, max.step = max.step)
-	plot.components(data$X, data$y, result$fit, pattern, true.components = data$M)
+	result = convexity.pattern.lasso.backfit(data$X, data$y,
+	                                         lambda = lambda, max.step = max.step)
+	plot.components(data$X, data$y, result$fit, 
+	                parse.pattern(result$pattern), true.components = data$M)	
 	
+	return (list(pattern = result$pattern, fit = result$fit))
 }
