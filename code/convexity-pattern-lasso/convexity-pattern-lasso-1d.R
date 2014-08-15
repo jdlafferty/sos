@@ -1,7 +1,7 @@
 ################################################################################
 # 
-# 1-D Convexity Pattern Regression as a Convex Program
-# (using Sabyasachi's new lasso-like idea)
+# 1-D Convexity Pattern Regression as Lasso
+# (using Sabyasachi's new formulation)
 # 
 # Professor John Lafferty's Group
 # YJ Choe
@@ -41,12 +41,21 @@
 # - For a demo, try example.1d.auto(). 
 #   Also see ./convexity-pattern-cvx-backfit.R and run example() there
 #   for the multivariate backfitting version.
+#
+# Version 1.3: August 14, 2014
+# - Renamed the function to be convexity.pattern.lasso.1d() and the filename
+#   to be convexity-pattern-lasso-1d.R.
+# - Removed the automatic choice function, as it does not find sparse patterns.
+#   It is replaced with choose.first.lambda(), which chooses the smallest lambda
+#   that yields a valid pattern: one without any component that has both convex
+#   and concave components active. One can use this function to find the lower
+#   bound on lambda, and choose some larger lambda for intended sparsity.
 # 
 # ** Please feel free to improve the code and leave a note here. **
 #
 ################################################################################
 
-convexity.pattern.cvx.1d = function (x, y, lambda = 1) {
+convexity.pattern.lasso.1d = function (x, y, lambda = 0.1) {
   
   ########################################
   #
@@ -302,7 +311,7 @@ example.1d = function (n = 100, sigma = 1, lambda = 0.2) {
   f.val = scale(f(x))
   y = f.val + epsilon
   
-  result = convexity.pattern.cvx.1d(x, y, lambda)
+  result = convexity.pattern.lasso.1d(x, y, lambda)
   
   par(mfrow = c(1,1))
   plot(x, y, main = "1-D Convexity Pattern Regression as a Convex Program")
@@ -319,15 +328,16 @@ example.1d = function (n = 100, sigma = 1, lambda = 0.2) {
   print(list(pattern = result$pattern))
 }
 
-convexity.pattern.cvx.1d.auto = function (x, y, step = 0.01, max.step = 100) {
+choose.first.lambda = function (x, y, step = 0.01, max.step = 100) {
   
   ########################################
   #
-  # This function chooses 'lambda' automatically
-  # by repeated calls to convexity.pattern.cvx.1d.
+  # This function chooses the smallest lambda
+  # that is "valid", i.e. each component is either
+  # convex or concave -- but not both -- or zero.
   #
   # Note that 'step' is simply the desired accuracy
-  # of the lambda parameter. 'max.step' is essentially
+  # of the lambda parameter. 'max.step' is
   # any large integer. 
   #
   # [Inputs]
@@ -354,16 +364,17 @@ convexity.pattern.cvx.1d.auto = function (x, y, step = 0.01, max.step = 100) {
   
   # iterate until the best fit with exactly one component active
   # (i.e. stop right before both components are active)
-  result = convexity.pattern.cvx.1d(x, y, 0)
+  result = convexity.pattern.lasso.1d(x, y, 0)
   for (lambda in step * seq(1, max.step)) {
-  	#cat(sprintf("lambda = %f\n", lambda))
-    result = convexity.pattern.cvx.1d(x, y, lambda)
+
+    result = convexity.pattern.lasso.1d(x, y, lambda)
 
     if (sum(result$pattern) == 1) {
       break
     }
     if (sum(result$pattern) == 0) {
-    	stop ("Error: Did not find a convex or concave component.")
+    	cat ("Warning: Did not find a convex or concave component.")
+    	break
     }
     if (lambda == step * max.step) {
     	cat ("Warning: Reached maximum step before convergence.")
@@ -372,39 +383,4 @@ convexity.pattern.cvx.1d.auto = function (x, y, step = 0.01, max.step = 100) {
   
   result$lambda = lambda
   return (result)
-}
-
-example.1d.auto = function (n = 300, sigma = 1, step = 0.01, max.step = 100) {
-
-  ########################################
-  # Testing the univariate convexity
-  # pattern regression function.
-  ########################################
-
-  # Generate Synthetic Data
-  # True convex function: f(x) = x^4 + 2x (then scaled)
-  f = function (x) { x^4 + 2*x }
-  x = runif(n, -5, 5)
-  # Resample if any two points are too close.
-  while (min(dist(x)) < 1e-6) {
-    x = runif(n, -5, 5)
-  }
-  epsilon = rnorm(n, 0, sigma) # Gaussian noise
-  f.val = scale(f(x))
-  y = f.val + epsilon
-  
-  result = convexity.pattern.cvx.1d.auto(x, y, step, max.step)
-  
-  plot(x, y, main = "1-D Convexity Pattern Regression as a Convex Program")
-  ord = order(x)
-  lines(x[ord], f.val[ord], lwd = 2, col = "darkgray")
-  lines(x[ord], result$f[ord], lwd = 2, col = "red")
-  lines(x[ord], result$g[ord], lwd = 2, col = "blue")
-  points(x, result$fit, pch = 20, col = "purple")
-  mtext(paste(result$status$solution, ", ", result$status$program, sep=""), 
-        side = 3, adj = 0)
-  mtext(sprintf("N: %d, optimal lambda: %.2f, MSE: %.2f", 
-                n, result$lambda, result$MSE), side = 3, adj = 1)
-  
-  print(list(pattern = result$pattern))
 }
