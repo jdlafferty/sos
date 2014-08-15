@@ -11,6 +11,8 @@
 # Version 1.0: August 7, 2014
 # - A working version of convex/concave/zero additive data generator
 #   with (at most) 10 non-zero components.
+# Version 1.1: August 13, 2014
+# - Added parse.pattern() for converting pattern matrices into vectors.
 #
 # ** Please feel free to improve the code and leave a note here. **
 #
@@ -188,4 +190,15 @@ cvx.generator = function (n = 100, p = 5, sigma = 1, pattern = NULL,
                X = X,
                M = M,
                y = y))
+}
+
+
+# Parser: from pattern matrix ((1,0), (0,0), (0,1)) 
+#         to pattern vector (-1, 0, 1)
+parse.pattern = function (pattern.matrix) {
+  if (any(colSums(pattern.matrix) > 1)) {
+    stop (paste("Error: Resulting pattern contains a component with",
+                "both components active"))
+  }
+  return (as.vector(c(1, -1) %*% pattern.matrix))
 }

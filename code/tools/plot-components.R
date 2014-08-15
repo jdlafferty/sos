@@ -88,6 +88,8 @@ plot.components = function (X, y, fit, pattern, true.components = NULL,
     if (!is.null(true.components)) {
       lines(X[, j][ord], true.components[, j][ord], lwd = 3, col = "darkgray")
     }
+
+    points(X[, j], y.hat, pch = 20, col = "purple")
     
     if (pattern[j] == 1) {
       lines(X[, j][ord], fit[, j][ord], lwd = 3, col = "red")
@@ -96,7 +98,6 @@ plot.components = function (X, y, fit, pattern, true.components = NULL,
       lines(X[, j][ord], fit[, j][ord], lwd = 3, col = "blue")
     }
     
-    points(X[, j], y.hat, pch = 20, col = "purple")
   }
   
   # Legend
