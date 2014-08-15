@@ -32,7 +32,7 @@
 # Change this to the location of your local repository (must end with /)
 SOURCE_DIRECTORY = "~/Code/sos-convexity/sos/"
 
-convexity.pattern.regression = function (X, y, B = 100, lambda = 1) {
+convexity.pattern.regression = function (X, y, B = 100, lambda = 0.1) {
 
   ########################################
   #
