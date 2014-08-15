@@ -251,7 +251,7 @@ convexity.pattern.lasso.1d = function (x, y, lambda = 0.1) {
   convexity.pattern$cones = cbind(list("RQUAD", c(t.index, s.index, r.index)))
 
   # Solve the program using Rmosek!
-  r = mosek(convexity.pattern, opts = list(verbose = -1))
+  r = mosek(convexity.pattern, opts = list(verbose = 1))
 
   #---------------------------------------
   # Results

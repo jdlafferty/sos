@@ -23,7 +23,7 @@
 # Change this to the location of your local repository (must end with /)
 SOURCE_DIRECTORY = "~/Code/sos-convexity/sos/"
 
-convexity.pattern.lasso = function (X, y, lambda = 1) {
+convexity.pattern.lasso = function (X, y, lambda = 0.1, verbose = 4) {
 
   ########################################
   #
@@ -33,6 +33,7 @@ convexity.pattern.lasso = function (X, y, lambda = 1) {
   # X: n by p design matrix (covariates)
   # y: n-vector (outcomes, centered)
   # lambda: positive scalar (sparsity&smoothness parameter)
+  # verbose: 0, 1, 2, 3, or 4 (Rmosek verbosity)
   #
   # [Output]
   # a list consisting of...
@@ -253,7 +254,7 @@ convexity.pattern.lasso = function (X, y, lambda = 1) {
   convexity.pattern$cones = cbind(list("RQUAD", c(t.index, s.index, r.index)))
 
   # Solve the program using Rmosek!
-  r = mosek(convexity.pattern)
+  r = mosek(convexity.pattern, opts = list(verbose = verbose))
 
   #---------------------------------------
   # Results

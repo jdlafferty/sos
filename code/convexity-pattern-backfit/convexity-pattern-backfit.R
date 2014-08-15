@@ -267,7 +267,7 @@ convexity.pattern.regression.1d = function (x, y, B = 10, lambda = 0.1) {
   convexity.pattern$intsub = c(z.index, w.index)
 
   # Solve the program using Rmosek!
-  r = mosek(convexity.pattern, opts = list(verbose = -1))
+  r = mosek(convexity.pattern, opts = list(verbose = 1))
 
   #---------------------------------------
   # Results

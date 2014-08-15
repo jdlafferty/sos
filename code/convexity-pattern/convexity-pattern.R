@@ -32,7 +32,7 @@
 # Change this to the location of your local repository (must end with /)
 SOURCE_DIRECTORY = "~/Code/sos-convexity/sos/"
 
-convexity.pattern.regression = function (X, y, B = 100, lambda = 0.1) {
+convexity.pattern.regression = function (X, y, B = 100, lambda = 0.1, verbose = 4) {
 
   ########################################
   #
@@ -43,6 +43,7 @@ convexity.pattern.regression = function (X, y, B = 100, lambda = 0.1) {
   # y: n-vector (outcomes, centered)
   # B: positive scalar (smoothness parameter)
   # lambda: positive scalar (sparsity parameter)
+  # verbose: 0, 1, 2, 3, or 4 (Rmosek verbosity)
   #
   # [Output]
   # a list consisting of...
@@ -293,7 +294,7 @@ convexity.pattern.regression = function (X, y, B = 100, lambda = 0.1) {
   convexity.pattern$intsub = c(z.index, w.index)
 
   # Solve the program using Rmosek!
-  r = mosek(convexity.pattern)
+  r = mosek(convexity.pattern, opts = list(verbose = verbose))
 
   #---------------------------------------
   # Results
