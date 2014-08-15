@@ -158,8 +158,7 @@ example = function (n = 300, pattern = c(-1, 1, 1, 0, -1),
                     lambda = 0.2, max.step = 20) {
 	
 	data = cvx.generator(n, pattern = pattern)
-	result = convexity.pattern.lasso.backfit(data$X, data$y,
-	                                         lambda = lambda, max.step = max.step)
+	result = convexity.pattern.lasso.backfit(data$X, data$y, lambda, max.step)
 	plot.components(data$X, data$y, result$fit, 
 	                parse.pattern(result$pattern), true.components = data$M)	
 	
