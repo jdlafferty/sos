@@ -43,6 +43,10 @@
 #   for the multivariate backfitting version.
 #
 # Version 1.3: August 14, 2014
+# - Fixed the objective to be the mean squared error instead of
+#   the square root of it. The 1/n factor is now also there.
+#   Previously there was an issue with Rmosek rotated cones that 
+#   somehow prevented doing this.
 # - Renamed the function to be convexity.pattern.lasso.1d() and the filename
 #   to be convexity-pattern-lasso-1d.R.
 # - Removed the automatic choice function, as it does not find sparse patterns.
@@ -117,25 +121,27 @@ convexity.pattern.lasso.1d = function (x, y, lambda = 0.1) {
   # fitted values: f_i, g_i 
   # pointwise errors (auxiliary): r_i
   # slopes for convexity (auxiliary): beta_i, gamma_i (i up to n-1)
+  # RQUAD constant 1/2: s
   # objective replacement: t
   f.index = seq(1, n)
   g.index = last(f.index) + seq(1, n) 
   r.index = last(g.index) + seq(1, n) 
   beta.index = last(r.index) + seq(1, n-1)
   gamma.index = last(beta.index) + seq(1, n-1)
-  t.index = last(gamma.index) + 1 
+  s.index = last(gamma.index) + 1
+  t.index = last(s.index) + 1 
   num.vars = t.index
 
   # Set up the program
   convexity.pattern = list(sense = "min")
 
-  # Objective: t + lambda * (beta_n - beta_1 - gamma_n + gamma_1)
-  # where t = sqrt(sum((y_i - (f_i + g_i))^2))
-  # Note that MSE = (1/n) * (t^2).
+  # Objective: (1/n) * t + lambda * (beta_{n-1} - beta_1 - gamma_{n-1} + gamma_1)
+  # where t = sum((y_i - (f_i + g_i))^2)
+  # Note that MSE = (1/n) * t.
   convexity.pattern$c = c(rep(0, last(r.index)), 
                           -lambda, rep(0, n-3), lambda,
                           lambda, rep(0, n-3), -lambda,
-                          1)
+                          0, 1/n)
 
   # Affine constraint 1: auxiliary variables [no cost]
   # r_i = y_i - (f_i + g_i), that is
@@ -149,7 +155,8 @@ convexity.pattern.lasso.1d = function (x, y, lambda = 0.1) {
   A1[, g.index] = .sparseDiagonal(n1)
   A1[, r.index] = .sparseDiagonal(n1)
 
-  # Affine constraint 2: convexity [2*(n-1) + 2*(n-2) affine inequalities]
+  # Affine constraint 2: convexity 
+  # [2*(n-1) affine no-cost equalities, 2*(n-2) affine inequalities]
   # For sorted points x_i, 
   # part 1: (i = 1, ..., n-1)
   # f_{i+1} - f_i = beta_i * (x_{i+1} - x_i)
@@ -191,60 +198,57 @@ convexity.pattern.lasso.1d = function (x, y, lambda = 0.1) {
   # Affine constraint 3: identifiability constraints [4 equalities]
   # We want the fitted values of each component to be centered
   # and also orthogonal to the data vector x. (inner product = 0)
+  # This eliminates the subspace of vectors that are both convex and concave.
   
   # number of rows (affine contraints)
   n3 = 4
 
   A3 = Matrix(0, nrow = n3, ncol = num.vars)
-  A3[1, f.index] = 1
-  A3[2, g.index] = 1
+  A3[1, f.index] = rep(1, n)
+  A3[2, g.index] = rep(1, n)
   A3[3, f.index] = x
   A3[4, g.index] = x
-
-  # Affine constraint 4: choice of pattern [1 inequality]
-  # 0 <= (beta_{n-1} - beta_1) - (gamma_{n-1} - gamma_1) <= lambda
-  # Note that (beta_{n-1} - beta_1) >= 0 and (gamma_{n-1} - gamma_1) <= 0.
-  # This will ideally induce sparsity in the differences between subgradients
-  # and ultimately the pattern.
-
-  # # number of rows (affine contraints)
-  # n4 = 1
   
-  # A4 = Matrix(0, nrow = n4, ncol = num.vars)
-  # A4[, c(beta.index[n-1], gamma.index[1])] = 1
-  # A4[, c(beta.index[1], gamma.index[n-1])] = -1
-
+  # Affine constraint 4: auxiliary variable for Rmosek rotated cone [no cost]
+  # s = 1/2 
+  
+  # number of rows (affine contraints)
+  n4 = 1
+  
+  A4 = Matrix(0, nrow = n4, ncol = num.vars)
+  A4[, s.index] = 1
 
   # Affine constraints combined with bounds
-  convexity.pattern$A = rBind(A1, A2, A3) #, A4)
+  convexity.pattern$A = rBind(A1, A2, A3, A4)
   convexity.pattern$bc = rbind(
     blc = c(y, 
             rep(0, n2.part1), rep(0, n2.part2), 
-            rep(0, n3)),
-#            rep(0, n4)),
+            rep(0, n3),
+            rep(1/2, n4)),
     buc = c(y, 
             rep(0, n2.part1), rep(Inf, n2.part2), 
-            rep(0, n3)) 
-#            rep(lambda, n4))
+            rep(0, n3),
+            rep(1/2, n4)) 
   )
 
   # Constraints on the program variables
-  # Integers are either 0 or 1, other constraints are vacuous
   convexity.pattern$bx = rbind(
     blx = c(rep(-Inf, length(c(f.index, g.index))),
             rep(-Inf, length(r.index)),
             rep(-Inf, length(c(beta.index, gamma.index))), 
+            0, # s
             0), # t
     bux = c(rep(Inf, length(c(f.index, g.index))),
             rep(Inf, length(r.index)),
             rep(Inf, length(c(beta.index, gamma.index))),
+            Inf, # s
             Inf) # t
   )
 
   # Conic constraint: quadratic objective (mean squared error)
-  cone.obj = cbind(list("QUAD", c(t.index, r.index)))
-
-  convexity.pattern$cones = cone.obj
+  # Note: In Rmosek terms, this is 2*t*s >= sum(r^2)
+  #       where s = 1/2. 
+  convexity.pattern$cones = cbind(list("RQUAD", c(t.index, s.index, r.index)))
 
   # Solve the program using Rmosek!
   r = mosek(convexity.pattern, opts = list(verbose = -1))
@@ -258,6 +262,7 @@ convexity.pattern.lasso.1d = function (x, y, lambda = 0.1) {
     solution = r$sol$itr$solsta, 
     program = r$sol$itr$prosta
   )
+  output = r$sol$itr$xx
 
   # helper: check if the fit is "essentially" zero
   is.zero = function (fit, tol = 1e-4) {
@@ -271,10 +276,10 @@ convexity.pattern.lasso.1d = function (x, y, lambda = 0.1) {
     return (p)
   }
 
-  f = r$sol$itr$xx[f.index][invPerm(ord)]
-  g = r$sol$itr$xx[g.index][invPerm(ord)]
+  f = output[f.index][invPerm(ord)]
+  g = output[g.index][invPerm(ord)]
   pattern = get.pattern(f, g)
-  MSE = (1/n) * (r$sol$itr$xx[t.index]^2)
+  MSE = (1/n) * output[t.index]
 
   fit = rep(0, n)
   if (pattern["convex",]) {
@@ -292,7 +297,7 @@ convexity.pattern.lasso.1d = function (x, y, lambda = 0.1) {
                r = r))
 }
 
-example.1d = function (n = 100, sigma = 1, lambda = 0.2) {
+example.1d = function (n = 100, sigma = 1, lambda = 0.05) {
 
   ########################################
   # Testing the univariate convexity
@@ -314,7 +319,7 @@ example.1d = function (n = 100, sigma = 1, lambda = 0.2) {
   result = convexity.pattern.lasso.1d(x, y, lambda)
   
   par(mfrow = c(1,1))
-  plot(x, y, main = "1-D Convexity Pattern Regression as a Convex Program")
+  plot(x, y, main = "1-D Convexity Pattern Regression as Lasso")
   ord = order(x)
   lines(x[ord], f.val[ord], lwd = 2, col = "darkgray")
   lines(x[ord], result$f[ord], lwd = 2, col = "red")
@@ -322,7 +327,7 @@ example.1d = function (n = 100, sigma = 1, lambda = 0.2) {
   points(x, result$fit, pch = 20, col = "purple")
   mtext(paste(result$status$solution, ", ", result$status$program, sep=""), 
         side = 3, adj = 0)
-  mtext(sprintf("N: %d, lambda: %.1f, MSE: %.2f", n, lambda, result$MSE), 
+  mtext(sprintf("N: %d, lambda: %.2f, MSE: %.2f", n, lambda, result$MSE), 
         side = 3, adj = 1)
   
   print(list(pattern = result$pattern))
