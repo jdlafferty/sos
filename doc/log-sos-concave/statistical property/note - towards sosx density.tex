@@ -1,0 +1,98 @@
+\documentclass[11pt,reqno]{amsart}
+\usepackage{amssymb,mathrsfs,color}
+\usepackage{pinlabel}
+\usepackage{graphicx}
+\usepackage{graphics} 
+
+\graphicspath{ {c:/users/mcytrynbaum/documents/rfigures/} {c:/users/mcytrynbaum/Desktop/package/} }
+\DeclareGraphicsExtensions{.pdf,.png,.jpg}
+
+%\usepackage[notcite,notref]{showkeys}
+
+%\textwidth=15cm \textheight=21.5cm
+%\oddsidemargin=0.5cm \evensidemargin=0.5cm
+\usepackage{amsmath} % for all math functions and operations
+\usepackage{amsfonts} % use this to write different scripts (e.g. Real nums, etc)
+\usepackage{mathtools} %for other math stuff not included in packages above
+\usepackage{amsthm} % in case you want the THM: COR: LEMMA: setup
+\usepackage[top=1in,bottom=1in,left=1in,right=1in]{geometry} %for setting the margins
+
+\setlength\parindent{0pt}
+
+\newtheorem{thm}{Theorem}[section]
+\newtheorem{lemma}[thm]{Lemma}
+\newtheorem{prop}[thm]{Proposition}
+\newtheorem{cor}[thm]{Corollary}
+\theoremstyle{definition}
+\newtheorem{defn}[thm]{Definition}
+\newtheorem{examp}[thm]{Example}
+\newtheorem{remark}[thm]{Remark}
+\setcounter{equation}{0}
+\numberwithin{equation}{section}
+
+\newcommand{\prf}{\begin{proof}}
+\newcommand{\eprf}{\end{proof}}
+\newcommand{\lft}{\left(}
+\newcommand{\rt}{\right)}
+\newcommand{\be}{\beta}
+\newcommand{\eps}{\epsilon}
+\newcommand{\wh}{\widehat}
+\newcommand{\wt}{\widetilde}
+\newcommand{\al}{\alpha}
+\newcommand{\bp}{\begin{pmatrix}}
+\newcommand{\ep}{\end{pmatrix}}
+\newcommand{\inv}{^{-1}}
+\newcommand{\var}{\text{Var}}
+\newcommand{\cov}{\text{Cov}}
+\newcommand{\corr}{\text{Corr}}
+\newcommand{\ssumi}{\sum_{i=1}^n}
+\newcommand{\ssumj}{\sum_{j=1}^n}
+\newcommand{\ssumk}{\sum_{k=1}^n}
+\newcommand{\im}{\text{Im}}
+\newcommand{\mc}{\mathcal}
+\newcommand{\mr}{\mathbb{R}}
+\newcommand{\ol}{\overline}
+\newcommand{\ul}{\underline}
+\newcommand{\prob}{\mathbb{P}}
+\newcommand{\ital}{\emph}
+\newcommand{\tb}{\textbf}
+\newcommand{\pa}{\partial}
+\newcommand{\dt}{\delta}
+\newcommand{\tc}{t_{comm}}
+\newcommand{\tp}{t_{patent}}
+\newcommand{\et}{\eta}
+\newcommand{\ov}{\overline}
+
+\title{Towards Density of SOSX in SMSX}
+\author{Max Cytrynbaum, Wei Hu}
+
+\begin{document}
+\maketitle
+
+I record some attempted solutions and possible avenues for proving density $SOSX \longrightarrow SMSX$. \\
+
+\tb{Convolution Approach} - One idea was to use the original idea from the Weierstrass Approximation Theorem (convolution with a polynomial kernel) to guarantee convexity. Convolution (over $\mr^p$) with a positive kernel preserves convexity, while convolution with a polynomial kernel (over a compact set) yields a polynomial. The issue is that we cannot guarantee both of these simultaneously. \\
+
+Our convex function $f$ is defined on a compact set $K$. Shift and extend $f$ to $K_1 \supset K$ such that $f = 0$ on $K_1^c$. Let $g(x)$ be a standard normal density in $\mr^p$. It follows from a theorem in Prolla (1988) that the cone of psd polynomials is dense (in the uniform norm) in the cone of continuous psd functions on $K$. Then let $p_m \to g$ be such a sequence of psd polynomials. \\
+
+The idea is to notice that 
+
+\[
+\int_{\mr^p} f(x - t)p_m(t) dt = \int_{-K + x} f(x - t)p_m(t) dt = \int_{K} f(t)p_m(x - t)
+\]
+
+Notice that the last expression is clearly a polynomial in x. We want to say that the first integral is convex (as a convolution of a convex function with a psd kernel $p_m$. We would actually want to build $p_m^{\eps} \to \frac{1}{\eps} g(x / \eps)$ uniformly on some set containing $K$, following the standard convolution argument. \\
+
+In the context of the truncated convolution above, we get uniform convergence on any compact set contained in $K$. Extending to $K \subset \subset K_1$ gives uniform convergence on $K$.  \\
+
+The issue is that we need to do something to make the integral converge. Making $f = 0$ on $K_1^c$ destroys convexity of the first expression, while if we trucate the polynomial outside of $K$, the last expression will no longer be a polynomial. An argument of this type seemed promising at first, but it is not clear if we can actually get something like this to work. \\
+
+\tb{Gradient Approximation Approach} - last time, we took an $SMSX$ function $f$ with Hessian $H_f = L_f L_f^T$ and approximated with $L_f^m \to L_f$ in $\| \cdot \|_{\infty}$. This was supposed to give an approximation $p_m \to f$ such that all $p_m$ are $SOSX$ polynomials. The issue is that our approximation $H_f^m$ is not necessarily a Hessian. I can show that given a gradient $g = \nabla h$, under some regularity conditions there exists a polynomial gradient $\nabla p_m \to g$ uniformly on a compact set in the case $p = 2$.\\
+
+The proof takes advantage of the fact that the ``curl-free'' conditions are very nice in 2-dimensions. It is not obvious how to extend this argument to the general case. 
+
+
+
+
+
+\end{document}
