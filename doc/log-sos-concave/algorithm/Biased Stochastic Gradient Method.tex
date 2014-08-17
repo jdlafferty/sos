@@ -6,6 +6,7 @@
 \usepackage[all,arc]{xy}
 \usepackage{enumerate}
 \usepackage{mathrsfs}
+\usepackage{multicol}
 
 %--------Theorem Environments--------
 %theoremstyle{plain} --- default
@@ -51,6 +52,8 @@
 %\date{Aug 10, 2014}
 
 \begin{document}
+
+
 
 %\begin{abstract}
 
@@ -347,7 +350,25 @@ If we start taking samples $x^{(1)}, x^{(2)}, \cdots, x^{(t)}$ from now (assume 
 \end{aligned}
 \end{equation}
 
-Let $e_k = R^d\sqrt{s}\varepsilon_k = R^d\sqrt{p+d\choose d}\varepsilon_k$. We can make $\varepsilon_k$ small enough to make $e_k$ small.
+Let $e_k = R^d\sqrt{s}\varepsilon_k = R^d\sqrt{p+d\choose d}\varepsilon_k$. We can make $\varepsilon_k$ small enough to make $e_k$ small.\\
+
+Similarly we can obtain the convergence rates of expectation for basic and accelerated proximal gradient method.
+
+\begin{thm}(Basic proximal-gradient method)
+Assume (H1), (H2), (H3), (H4), and (H6). For step sizes $\alpha_k = \frac{1}{L}(k = 1, \cdots, N)$, we have
+\begin{equation}\label{basic-prox-expect-bound}
+\mathbb E(g(\bar{\theta}_{N\setminus 1}) - g(\theta^*)) \le \frac{L}{2(N-1)}\big(\|\theta_1 - \theta^* \| + \frac{2}{L} \sum_{k=2}^{N} e_k\big)^2
+\end{equation}
+where $\bar{\theta}_{N\setminus 1} = \frac{\sum_{k=2}^N \theta_k}{N-1}$ is the average of all visited points except $\theta_1$.
+\end{thm}
+
+\begin{thm}(Accelerated proximal-gradient method)
+Assume (H1), (H2), (H3), (H4) and (H6). If the algorithm starts from $\theta_1 = \eta_1$, and iterates as \eqref{acc-prox-iteration}, then we have
+\begin{equation}\label{acc-prox-expect-bound}
+g(\theta_N) - g(\theta^*) \le \frac{2L}{N^2}\big( \|\theta_1 - \theta^* \|+ \frac{2}{L}\sum_{k=2}^{N} k e_k\big)^2.
+\end{equation}
+\end{thm}
+
 
 
 
@@ -374,6 +395,7 @@ Efficient sampling from time-varying log-concave distributions.
 \emph{aiXiv:1309.5977v1}, 2013.
 
 \end{thebibliography}
+
 
 \end{document}
 
