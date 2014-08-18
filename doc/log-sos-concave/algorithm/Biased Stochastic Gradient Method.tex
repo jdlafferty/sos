@@ -252,7 +252,7 @@ If there is no error, i.e., $\xi_k=0(k=1,2,\cdots)$, then both \eqref{weighted-a
 The following two theorems for basic and accelarated proximal-gradient methods are from \cite{prox}. Since projection is a special case of proximity operator, this method can be applied. The proofs of them are in \cite{prox}.
 
 \begin{thm}(Basic proximal-gradient method)
-Assume (H1), (H2), (H3) and (H4). For step sizes $\alpha_k = \frac{1}{L}(k = 1, \cdots, N)$, we have
+Assume (H1) and (H4). For step sizes $\alpha_k = \frac{1}{L}(k = 1, \cdots, N)$, we have
 \begin{equation}\label{basic-prox-bound}
 g(\bar{\theta}_{N\setminus 1}) - g(\theta^*) \le \frac{L}{2(N-1)}\big(\|\theta_1 - \theta^* \| + \frac{2}{L} \sum_{k=2}^{N} \|\xi_k\|\big)^2
 \end{equation}
@@ -260,7 +260,7 @@ where $\bar{\theta}_{N\setminus 1} = \frac{\sum_{k=2}^N \theta_k}{N-1}$ is the a
 \end{thm}
 
 \begin{thm}(Accelerated proximal-gradient method)
-Assume (H1), (H2), (H3) and (H4). If the algorithm starts from $\theta_1 = \eta_1$, and iterates as
+Assume (H1) and (H4). If the algorithm starts from $\theta_1 = \eta_1$, and iterates as
 \begin{equation}\label{acc-prox-iteration}
 \begin{cases}
 \theta_{k+1} = \Pi_\Theta\big(\eta_k - \frac{1}{L}(\nabla g(y_k) + \xi_k)\big)\\
@@ -354,8 +354,8 @@ Let $e_k = R^d\sqrt{s}\varepsilon_k = R^d\sqrt{p+d\choose d}\varepsilon_k$. We c
 
 Similarly we can obtain the convergence rates of expectation for basic and accelerated proximal gradient method.
 
-\begin{thm}(Basic proximal-gradient method)
-Assume (H1), (H2), (H3), (H4), and (H6). For step sizes $\alpha_k = \frac{1}{L}(k = 1, \cdots, N)$, we have
+\begin{thm}
+Assume (H1), (H4), and (H6). For step sizes $\alpha_k = \frac{1}{L}(k = 1, \cdots, N)$, we have
 \begin{equation}\label{basic-prox-expect-bound}
 \mathbb E(g(\bar{\theta}_{N\setminus 1}) - g(\theta^*)) \le \frac{L}{2(N-1)}\big(\|\theta_1 - \theta^* \| + \frac{2}{L} \sum_{k=2}^{N} e_k\big)^2
 \end{equation}
@@ -363,7 +363,7 @@ where $\bar{\theta}_{N\setminus 1} = \frac{\sum_{k=2}^N \theta_k}{N-1}$ is the a
 \end{thm}
 
 \begin{thm}(Accelerated proximal-gradient method)
-Assume (H1), (H2), (H3), (H4) and (H6). If the algorithm starts from $\theta_1 = \eta_1$, and iterates as \eqref{acc-prox-iteration}, then we have
+Assume (H1), (H4) and (H6). If the algorithm starts from $\theta_1 = \eta_1$, and iterates as \eqref{acc-prox-iteration}, then we have
 \begin{equation}\label{acc-prox-expect-bound}
 g(\theta_N) - g(\theta^*) \le \frac{2L}{N^2}\big( \|\theta_1 - \theta^* \|+ \frac{2}{L}\sum_{k=2}^{N} k e_k\big)^2.
 \end{equation}
