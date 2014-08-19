@@ -25,8 +25,8 @@ SOURCE_DIRECTORY = "~/Code/sos-convexity/sos/"
 source(paste(SOURCE_DIRECTORY, 
              "code/convexity-pattern-lasso/convexity-pattern-lasso.R", sep = ""))
 
-pattern.simulation = function (n.range = seq(100, 500, 100), 
-                               p.range = seq(4, 10, 2), 
+pattern.simulation = function (n.range = c(16, 32, 64, 128, 256, 512), 
+                               p.range = c(5, 10, 15, 20), 
                                sigma = 0.5,
                                sparsity = function (p) { ceiling (0.4 * p^0.75) },
                                num.repeats = 20,
@@ -59,28 +59,6 @@ pattern.simulation = function (n.range = seq(100, 500, 100),
   # Simulation
   #---------------------------------------
   
-  # if (parallel) {
-    # worker = function (params) {    	
-      # data = cvx.generator(params$n, params$p, params$sigma, 
-                           # num.convex = sample(seq(0, params$p-params$num.sparse),
-                                               # 1),
-                           # num.sparse = params$num.sparse)
-      # true.pattern = data$pattern
-      
-      # t0 = proc.time()
-      # result = tryCatch(convexity.pattern.lasso(data$X, data$y, verbose = 1),
-                        # error = function (e) NULL)
-      # t1 = proc.time()
-      
-      # if (is.null(result)) return (NULL)
-      
-      # pattern = parse.pattern(result$pattern)
-      
-      # return (list(success = all(pattern == true.pattern),
-                   # running.time = t1["elapsed"] - t0["elapsed"]))
-    # }
-  # }
-  
   success.rate = list()
   average.time = list()
   
@@ -96,15 +74,11 @@ pattern.simulation = function (n.range = seq(100, 500, 100),
       n.index = which(n == n.range)
       success = rep(0, num.repeats)
       running.time = rep(0, num.repeats)
+      cat(sprintf("Testing n=%d and p=%d...", n, p))
       
-      cat(sprintf("Testing n=%d and p=%d...\n", n, p))
-      
-      # # Parallel version
-      # if (parallel) {
-        # params = list(n = n, p = p, sigma = sigma, num.sparse = num.sparse)
-        # out.parallel = unlist(mclapply(rep(params, num.repeats), worker))
-        # next
-      # }
+      # Specify lambda
+      lambda = sigma * sqrt(log(p)/n)
+      cat(sprintf("(lambda=%.2f)\n", lambda))
       
       for (iter in 1:num.repeats) {
         
@@ -115,16 +89,22 @@ pattern.simulation = function (n.range = seq(100, 500, 100),
         
         t0 = proc.time()
         result = tryCatch(convexity.pattern.lasso(data$X, data$y, 
-                                                  lambda = 0.05, verbose = 1),
+                                                  lambda = lambda, verbose = 1),
                           error = function (e) NULL)
         t1 = proc.time()
         running.time[iter] = t1["elapsed"] - t0["elapsed"]
         
         if (is.null(result)) {
           cat("Warning: Algorithm failed.\n")
-          next
+          pattern = rep(-2, p)
         }
-        pattern = parse.pattern(result$pattern)
+        
+        # Error if a pattern has a component with both components active
+        pattern = tryCatch(parse.pattern(result$pattern), 
+                           error = function (e) { 
+                           	         cat("Warning: Both components active.\n")
+                           	         rep(-2, p)
+                           	       }) 
 
         if (all(pattern == true.pattern)) {
           success[iter] = 1
