@@ -329,7 +329,7 @@ Therefore, we have shown that $\overline{SOSX} \supset SMSX$.
 
 for$x \in K$. Then $\|f_{\eps} - f\|_{\infty} \to 0$ as $\eps \to 0$, so we have the density result. 
 
-\subsection{Denseness of SMX in CTSX} - Here, we assume that $f \in CTSX(K)$. Extend $f$ continuously to Suppose that $f$ is such a function and let $\delta = d(K, K_1^c)$. \\
+\subsection{Denseness of SMX in CTSX} Here, we assume that $f \in CTSX(K)$. Extend $f$ continuously to Suppose that $f$ is such a function and let $\delta = d(K, K_1^c)$. \\
 
 Convolution with a positive function preserves convexity. This is easily seen from the definition. Let $f$ convex on $\mr^p$ and $\phi \geq 0$, then 
 
@@ -339,7 +339,7 @@ Convolution with a positive function preserves convexity. This is easily seen fr
 
 Each $f_t(x) := f(x -t)$ is convex, therefore the convolution above is convex. \\
 
-Let $\phi$ be a smooth, compactly supported function (e.g. a bump function). For $\eps > 0$, define a class of functions $\phi_{\eps} = \frac{1}{\eps} \phi(\frac{x}{\eps})$. Fix $f$ a continuous convex function. Then $f$ is bounded on $K$. Define a class of functions $f_{\eps} := (\phi_{\eps} \ast f)$. The standard arguments show that (i) $f_{\eps}$ is $C^{\infty}$ for each $\eps$ (ii) $f_{\eps} \to f$ uniformly on any compact set and (iii) $f_{\eps}$ is convex for all $\eps$. This will exhibit $f$ as a limit point of $SMX$, showing that $\overline{SMX} \supset CTSX$. \\
+Let $\phi$ be a smooth, compactly supported function (e.g. a bump function). For $\eps > 0$, define a class of functions $\phi_{\eps} = \frac{1}{\eps} \phi(\frac{x}{\eps})$. Fix $f$ a continuous convex function. Then $f$ is bounded on $K$. Define a class of functions $f_{\eps} := (\phi_{\eps} \ast f)$. The standard arguments show that (i) $f_{\eps}$ is $C^{\infty}$ for each $\eps$ (ii) $f_{\eps} \to f$ uniformly on any compact set $A \subset \subset K$ and (iii) $f_{\eps}$ is convex for all $\eps$. This will exhibit $f$ as a limit point of $SMX$, showing that $\overline{SMX} \supset CTSX$. \\
 
 Note that (iii) was shown above and essentially follows from the definition of convexity. Since $\phi$ is compactly supported and $f$ continuous, the family of convolutions defined above converge for all $x \in \mr^p$. First we need the following 
 
@@ -369,34 +369,55 @@ For (i), note that
 
 so that whenever we need to take a derivative $\frac{\pa}{\pa x_{\alpha}} (\phi \ast f)(x)$, we just pass the differentiation operator through the integral (formal justification using dominated convergence can be given since $\phi$ is compactly supported and $f$ continuous). Thus, we just differentiate the integrand $\phi$, which is $C^{\infty}$ by assumption. \\
 
-For (ii), rewrite the integral above as 
+For (ii), let $\ov{f}$ be an extension of $f$ from $K$ to $\mr^p$ as in \eqref{cts-convex-extension}. Choose $\eps > 0$. Let $K_1 \supset \supset K$. We will show that $\ov{f}_{\eps} \to \ov{f}$ on $K$. Note that we have $0 < \gamma = d(K, K_1^c)$. In what follows, we choose $\delta < \gamma$. Using uniform continuity of $\ov{f}$ on $K_1$, choose $\delta$ as above such that $x,y \in K_1$, $\|x - y\| <\delta \implies |f(x) - f(y)| < \eps$. Finally, choose $\eta$ such that $\int_{B(0, \delta)} \phi_{\eta}(t) dt \geq 1 - \eps$ \\
 
-\begin{equation} \label{conv2}
+Calculate as follows for $x \in K$
+
+\begin{equation} \label{conv1}
 \begin{aligned}
-f_{\eps} = (\phi_{\eps} \ast f)(x) &= \int_{\mr^p} \phi_{\eps}(t) f(x - t) dt\\
-&=\int_{B_{\eps}} \phi_{\eps}(t) f(x - t) dt + \int_{B_{\eps}^c} \phi_{\eps}(t) f(x - t) dt
+\ov{f}(x) - \ov{f}_{\eta}(x) &= \int_{\mr^p} \ov{f}(x) \phi_{\eta}(t) dt - \int_{\mr^p} \ov{f}(x - t) \phi_{\eta}(t) dt\\
+&= \int_{\mr^p} (\ov{f}(x) - \ov{f}(x -t)) \phi_{\eta}(t) dt = \int_{B(0,\delta)} (\ov{f}(x) - \ov{f}(x -t)) \phi_{\eta}(t) dt  \\
+&+ \int_{B(0, \delta)^c } (\ov{f}(x) - \ov{f}(x -t)) \phi_{\eta}(t) dt 
 \end{aligned}
 \end{equation}
 
-Where we choose $B_{\eps}$ a very small ball containing $0$ of radius $h(\eps)$ such that (i) $\int_{B_{\eps}} \phi \approx 1$ and (ii) $\phi \approx 0 $ on $B_{\eps}^c$ as well as (iii) $f(x-t) \approx f(x)$ for $t \in B_{\eps}$ (this is where we use continuity on the class $CTSX$). Then, roughtly, the above decomposition gives 
+Consider the first term. By our choice of $\delta$, in absolute value this is 
 
-\begin{equation} \label{conv3}
-\begin{aligned}
-&\int_{B_{\eps}} \phi_{\eps}(t) f(x - t) dt + \int_{B_{\eps}^c} \phi_{\eps}(t) f(x - t) dt\\
-&\approx f(x) \int_{B_{\eps}} \phi_{\eps}(t) dt + \int_{B_{\eps}^c} 0 \cdot f(x -t) dt \\
-&\approx f(x) \cdot 1 + 0 = f(x)
-\end{aligned}
+\begin{equation} \label{conv-bound-1}
+\leq \int_{B(0,\delta)} |\ov{f}(x) - \ov{f}(x -t)| \phi_{\eta}(t) dt  \leq \eps \int_{B(0,\delta)} \phi_{\eta}(t) dt \leq \eps
 \end{equation}
 
-I claim that this gives uniform convergence $\|(\phi_{\eps} \ast f) - f\|_{\infty, K} \to 0$. Note that continuity of $f$ on $K$ implies uniform continuity, so the the approximation of the first integral in the above decomposition can be made uniform. $f$ is uniformly bounded on $\mr^p$, so the $2^{nd}$ integral above goes to $0$ uniformly. This sketch can be made rigorous but the arguments are relatively standard. \\
+Next we consider the second integral at the end of \eqref{conv1} above. Define the set 
 
-Then we have shown that \\
-
-\begin{equation} \label{dens-summ}
-SOSX \longrightarrow SMSX \longrightarrow SMX \longrightarrow CTSX
+\begin{equation} \label{set-def}
+A = \bigcup_{\eta < 1} \bigcup_{x \in K} \lft -\supp(\phi_{\eta}) + x \rt 
 \end{equation}
 
-where the arrow denotes density (in the sense of $\| \cdot \|_{K,\infty}$ for a fixed $K$ compact and star-shaped). In particular, we have shown that sos-convex polynomials are dense in continuous convex functions on a compact, convex set $K$. \\
+and note that this set is bounded by compactness of $K$ and (decreasing, nested) finite support of $\phi_{\eta}$. A simple change of variables shows that the second integral can be rewritten as 
+
+\begin{equation} \label{conv4 }
+\int_{B(0, \delta)^c } (\ov{f}(x) - \ov{f}(x -t)) \phi_{\eta}(t) dt = \underset{- B(0, \delta)^c \cap \supp(\phi_{\eta}) + x}{\int} (\ov{f}(x) - \ov{f}(\xi)) \phi_{\eta}(x - \xi) d \xi 
+\end{equation}
+
+Since for any $x \in K$ and $\eta < 1$, we have that
+
+\begin{equation} \label{conv5} 
+- B(0, \delta)^c \cap \supp(\phi_{\eta}) + x \subset A \subset \ov{B}(0,R)
+\end{equation}
+
+for some large $R$, then boundedness of $f$ on $\ov{B}(0,R)$ (say by $N$), gives that the norm of the second integral is 
+
+\begin{equation} \label{conv6}
+\leq \underset{- B(0, \delta)^c \cap \supp(\phi_{\eta}) + x}{\int} 2N \cdot \phi_{\eta}(x - \xi) d \xi \leq \int_{B(0, \delta)^c } \phi_{\eta}(t) dt \leq 2N \eps 
+\end{equation}
+
+Then since $x \in K$ was arbitrary, we have shown that $\ov{f}_{\eps} \to \ov{f}$ uniformly on $K$. In particular, $f \in CTSX(K)$ is the uniform limit of a sequence of smooth convex functions, so we have shown that $\ov{SMSX} \supset CTSX$. This finishes our density results, and we have shown that \\
+
+\begin{equation} \label{dense-summ}
+SOSX \overset{dense}{\subset} SMSX \overset{dense}{\subset} SMX \overset{dense}{\subset} CTSX 
+\end{equation}
+
+in the uniform norm on a compact, convex set $K$. In particular, for $p = 1$, we have given a full proof that sos-convex polynomials are dense in continuous convex functions on a compact, convex set $K$. \\
 
 Consider the shape-constrained maximum-likelihood estimator $f_n$ from the Cule paper. In this section, we show that there exists a a sequence of log sos-concave densities $p_n^m$ that converge in distribution to the Cule estimator $f_n$. \\
 
