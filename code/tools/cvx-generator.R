@@ -1,6 +1,6 @@
 ################################################################################
 # 
-# Convex Function Generator
+# Convex Sequence Generator
 # 
 # Professor John Lafferty's Group
 # YJ Choe
@@ -13,13 +13,19 @@
 #   with (at most) 10 non-zero components.
 # Version 1.1: August 13, 2014
 # - Added parse.pattern() for converting pattern matrices into vectors.
+# Version 1.2: August 18, 2014
+# - Now generates random convex sequences instead of those from known functions,
+#   in particular can generate unlimited number of convex sequences.
+#   'steepest.slope' is a new parameter serving as the absolute bound for
+#   the maximum slope.
 #
 # ** Please feel free to improve the code and leave a note here. **
 #
 ################################################################################
 
 cvx.generator = function (n = 100, p = 5, sigma = 1, pattern = NULL,
-                          num.convex = 2, num.sparse = 1, design = "uniform") {
+                          num.convex = 2, num.sparse = 1, 
+                          steepest.slope = 10, design = "uniform") {
 
   ########################################
   #
@@ -39,6 +45,8 @@ cvx.generator = function (n = 100, p = 5, sigma = 1, pattern = NULL,
   # num.sparse: number of sparse components.
   #             this argument is ignored if
   #             'pattern' is specified.
+  # steepest.slope: the absolute maximum of
+  #                 the slope in any sequence
   # design: the design of covariates.
   #         options are "uniform" (default),
   #         "regular", and "gaussian" or "normal".
@@ -97,41 +105,6 @@ cvx.generator = function (n = 100, p = 5, sigma = 1, pattern = NULL,
              design == "gaussian", design == "normal"))) {
     stop ("Input 'design' must be either uniform, regular, gaussian, or normal")    
   }
-
-  #---------------------------------------
-  # Convex functions on [-1, 1]
-  #---------------------------------------
-
-  num.functions = 10
-  
-  if (p - num.sparse > num.functions) {
-    stop (paste("Sorry, the current implementation does not support",
-                sprintf("more than %d non-zero components", num.functions)))
-  }
-  
-  f = list()
-  
-  f[[1]] = function (x) { x^4 - 2*x }
-  f[[2]] = function (x) { 2*x^4 + x }
-  f[[3]] = function (x) { 3*x^2 + x }
-  f[[4]] = function (x) { x^2 + 0.01*x }
-  f[[5]] = function (x) { (x-5) * log(3*(x+4)) }
-  f[[6]] = function (x) { exp(x^2 - x) }
-  f[[7]] = function (x) { exp(x^2 + 0.25*x) }
-  f[[8]] = function (x) { x^6 }
-  f[[9]] = function (x) { -exp(-x^2 + 0.2*x) }
-  f[[10]] = function (x) { -log(x+5) }
-  
-  # # Show functions
-  # x = runif(n, -1, 1)
-  # ord = order(x)
-  # M = scale(sapply(1:num.functions, function (i) { sapply(x, f[[i]]) }))
-  # colors = rainbow(num.functions)
-  # plot(x, x, pch = 20)
-  # for (i in 1:num.functions) { 
-    # lines(x[ord], M[,i][ord], col = colors[i], lwd = 2) 
-  # }
-  # legend("top", as.character(1:num.functions), col = colors, lwd = 2)
   
   #---------------------------------------
   # Generate covariates
@@ -162,19 +135,37 @@ cvx.generator = function (n = 100, p = 5, sigma = 1, pattern = NULL,
     X[X < -1] = -1
     X[X > 1] = 1
   }
-  
+
   #---------------------------------------
-  # Sample functions and compute M
+  # Convex sequences on [-1, 1]
   #---------------------------------------
-  
-  components = sample(1:num.functions, p, replace = FALSE)
+
   M = Matrix(0, nrow = n, ncol = p)
-  c = 1
   
-  for (i in 1:p) {
-    if (pattern[i] != 0) {
-      M[, i] = pattern[i] * scale(sapply(X[, i], f[[c]]))
-      c = c + 1
+  # n * (n-1) structured matrix that gives the centered values
+  # given the differences
+  P = function (n) {
+    col = function (i) { c(rep(-(n-i), i), rep(i, n-i)) }
+    return ((1/n) * Matrix(sapply(1:(n-1), col)))
+  }
+  
+  for (j in 1:p) {
+    if (pattern[j] != 0) {
+      
+      # Find the ordering of the jth component and sort
+      ord = order(X[, j])
+      x = sort(X[, j])
+      
+      # Compute the diagonal matrix of differences
+      D = diag(x[2:n] - x[1:(n-1)])
+      
+      # Generate an increasing slope
+      s = sample(steepest.slope, 1)
+      beta = sort(runif(n-1, min = -s, max = s))
+      
+      # Find the convex sequence f and return to original index
+      f = scale(P(n) %*% D %*% beta)
+      M[, j] = pattern[j] * f[invPerm(ord)]
     }
   }
   
