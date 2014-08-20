@@ -419,22 +419,26 @@ SOSX \overset{dense}{\subset} SMSX \overset{dense}{\subset} SMX \overset{dense}{
 
 in the uniform norm on a compact, convex set $K$. In particular, for $p = 1$, we have given a full proof that sos-convex polynomials are dense in continuous convex functions on a compact, convex set $K$. \\
 
-Consider the shape-constrained maximum-likelihood estimator $f_n$ from the Cule paper. In this section, we show that there exists a a sequence of log sos-concave densities $p_n^m$ that converge in distribution to the Cule estimator $f_n$. \\
+\subsection{Distribution Convergence Argument} Consider the shape-constrained maximum-likelihood estimator $f_n$ from the Cule paper. In this section, we show that there exists a a sequence of log sos-concave densities $p_n^m $ such that 
+
+\begin{equation} \label{distr-conv}
+p_n^m \overset{\mathcal{D}}{\longrightarrow} f_n \qquad (m \to \infty) 
+\end{equation}
 
 We also show that, as $d \to \infty$, the objective value, i.e. the achieved likelihood, of our program converges to the max-likelihood among log-concave estimators (the objective value of Cule's program). \\
 
-Our approach will be as follows. Given the convex hull of the data $C_n$, we will construct a set $K = C_n^{\eps}$ such that $\mc{L}(C_n^{\eps} \setminus C_n) = \eps$, where $\mc{L}$ denotes Lebesgue measure. \\
+Our approach will be as follows. Given the convex hull of the data $C_n$, we will construct a set $K = C_n^{\eps}$ such that $\mc{L}(C_n^{\eps} \setminus C_n) = \eps$, where $\mc{L}$ denotes Lebesgue measure. We will then extend the concave function $s_n$ defining the Cule estimator ($f_n = \exp(s_n)$) to $K$ in such a way that (i) our extension is convex and (ii) our extension is increasingly negative on $\pa K$. \\
 
-We will then extend the concave function $s_n$ defining the Cule estimator ($f_n = \exp(s_n)$) to $K$ in such a way that (i) our extension is convex and (ii) our extension is increasingly negative on $\pa K$. Using our work above, let $p_m$ be a sequence of sos concave functions such that converge to our extension in $\| \cdot \|_{\infty}$. We will then argue that for any bounded function $G$ on $\mr^p$, we have 
+Using our work above, let $p_m$ be a sequence of sos concave functions that converge to our extension in $\| \cdot \|_{\infty}$. We will then argue that for any bounded function $G$ on $\mr^p$, we have 
 
 \[
 \int_{\mr^p} G(x) \exp(p_m(x)) = \int_{K^c} G(x) \exp(p_m(x)) + \int_{K \setminus C_n} G(x) \exp(p_m(x)) + \int_{C_n} G(x) \exp(p_m(x))
 \]
 
-We will show that (1) the first integral is small because loosely $p_m(x) \approx - \infty$ on $K^c$.  (2) The second integral is small because $\mc{L}(C_n^{\eps} \setminus C_n) \to 0$ as $\eps \to 0$. Finally, (3) the last integral converges to $\int_{C_n} G(x) f_n(x)$ because $\|p_m - s_n\|_{\infty,C_n} \to 0$. A rigorous formulation of this argument will show that for any bounded function $G$ we have 
+We will show that (i) the first integral is small because $p_m(x) \approx - \infty$ on $K^c$.  (ii) The second integral is small because $\mc{L}(C_n^{\eps} \setminus C_n) \to 0$ as $\eps \to 0$. Finally, (iii) the last integral converges to $\int_{C_n} G(x) f_n(x)$ because $\|p_m - s_n\|_{\infty,C_n} \to 0$. A rigorous formulation of this argument will show that for any bounded function $G$ we have 
 
 \[
-\int_{\mr^p} G(x) \exp(p_m(x)) dx \to \int_{\mr^p} G(x) f_n(x) dx \quad (m \to \infty) 
+\int_{\mr^p} G(x) \exp(p_m(x)) dx \to \int_{\mr^p} G(x) f_n(x) dx \qquad (m \to \infty) 
 \]
 
 i.e. $p_m$ converges to $f_n$ in distribution. \\
