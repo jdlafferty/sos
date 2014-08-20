@@ -1,0 +1,297 @@
+%%%%%%%%%%%%% Packages
+\usepackage{xspace,xcolor,enumerate}
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{color,graphicx}
+\usepackage{dsfont}
+
+
+%%%%%%%%%%%%%%% Lengths
+\setlength{\topmargin}{-0.5 in} \setlength{\oddsidemargin}{0 in}
+\setlength{\evensidemargin}{0 in} \setlength{\textwidth}{6.5 in}
+\setlength{\textheight}{8.5 in} \setlength{\headsep}{0.75 in}
+\setlength{\parindent}{0 in} \setlength{\parskip}{0.05 in}
+
+
+%%%%%%%%%%%%%%%%%% Theorem Environments
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{conjecture}[theorem]{Conjecture}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{claim}[theorem]{Claim}
+\newtheorem{fact}[theorem]{Fact}
+\newtheorem{openprob}[theorem]{Open Problem}
+\newtheorem{remk}[theorem]{Remark}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{exercise}[theorem]{Exercise}
+\newtheorem{apdxlemma}{Lemma}
+\newtheorem{algorithm}[theorem]{Algorithm}
+\newcommand{\question}[1]{{\sf [#1]\marginpar{?}} }
+
+
+
+%%%%%%%%%%%%% Additional Macros for Citations %%%%%%%%%%%%%%%%
+% Convention for citations is authors' initials followed by the year.
+% For example, to cite a paper by Leighton and Maggs you would type
+% \cite{LM89}, and to cite a paper by Strassen you would type \cite{S69}.
+% (To avoid bibliography problems, for now we redefine the \cite command.)
+% Also commands that create a suitable format for the reference list.
+\renewcommand{\cite}[1]{[#1]}
+\def\beginrefs{\begin{list}%
+        {[\arabic{equation}]}{\usecounter{equation}
+         \setlength{\leftmargin}{2.0truecm}\setlength{\labelsep}{0.4truecm}%
+         \setlength{\labelwidth}{1.6truecm}}}
+\def\endrefs{\end{list}}
+\def\bibentry#1{\item[\hbox{[#1]}]}
+
+%%%%%%%%%% Symbols and Fonts
+\def\from{:}
+\def\to{\rightarrow}
+\def\eps{\varepsilon}
+\def\epsilon{\varepsilon}
+\def\e{\epsilon}
+\def\eps{\epsilon}
+\def\d{\delta}
+\def\phi{\varphi}
+\def\cal{\mathcal}
+\def\xor{\oplus}
+\def\ra{\rightarrow}
+\def\implies{\Rightarrow}
+\def\psdgeq{\succeq} 
+\renewcommand{\bar}{\overline} 
+\newcommand{\ol}{\overline}
+
+\def\bull{\vrule height .9ex width .8ex depth -.1ex }
+
+%%%%%%%%%%%%%%%%%%%%%% Text Macros
+\newcommand{\ie}{i.e.,\xspace}
+\newcommand{\eg}{e.g.,\xspace}
+\newcommand{\etal}{et al.\xspace}
+\newcommand{\cf}{{\it cf.,}}
+
+%%%%%%%%%%%%%%%%%%%%% Punctuation at the end of a displayed formula
+\newcommand{\mper}{\,.}
+\newcommand{\mcom}{\,,}
+
+%%%%%%%%%%%%%%%%%%%%%% Number Sets
+\newcommand{\R}{{\mathbb R}}
+\newcommand{\E}{{\mathbb E}}
+\newcommand{\C}{{\mathbb C}}
+\newcommand{\N}{{\mathbb{N}}}
+\newcommand{\Z}{{\mathbb Z}}
+\newcommand{\F}{{\mathbb F}}
+\newcommand{\zo}{\{0,1\}}
+\newcommand{\GF}{\mathrm{GF}}
+\newcommand{\FF}{{\mathbb F}}
+\newcommand{\Real}{{\mathbb R}}
+
+\newcommand{\B}{\{0,1\}\xspace}
+\newcommand{\pmone}{\{-1,1\}\xspace}
+
+\newcommand{\indicator}[1]{\mathds{1}_{\{#1\}}}
+
+%%%%%%%%%%%%%%%%%%%%% Random Variables and Probability
+\newcommand{\Esymb}{\mathbb{E}}
+\newcommand{\Psymb}{\mathbb{P}}
+\newcommand{\Vsymb}{\mathsf{Var}}
+
+\DeclareMathOperator*{\ExpOp}{\Esymb}
+\DeclareMathOperator*{\VarOp}{\Vsymb}
+\DeclareMathOperator*{\ProbOp}{\Psymb}
+\renewcommand{\Pr}{\ProbOp}
+
+\newcommand{\prob}[1]{\Pr\left[{#1}\right]}
+\newcommand{\Prob}[2]{\Pr_{{#1}}\left[{#2}\right]}
+\newcommand{\ex}[1]{\ExpOp\left[{#1}\right]}
+\newcommand{\Ex}[2]{\ExpOp_{{#1}}\left[{#2}\right]}
+\newcommand{\var}[1]{\VarOp\left[{#1}\right]}
+\newcommand{\Var}[2]{\VarOp_{{#1}}\left[{#2}\right]}
+
+
+\newcommand{\conv}[1]{\mathrm{conv}\inparen{#1}}
+\newcommand{\given}{\;\middle\vert\;}
+
+
+%%%%%%%%%% Standard Normal Distribution
+\newcommand{\gauss}[2]{{\cal N(#1, #2)}}
+
+%%%%%%%%%%%% Fractions
+% commands for fractions 
+\usepackage{nicefrac}
+% poor man's fraction
+\newcommand{\flatfrac}[2]{#1/#2}
+\newcommand{\varflatfrac}[2]{#1\textfractionsolidus#2}
+
+\let\nfrac=\nicefrac
+\let\ffrac=\flatfrac
+% similar commands: tfrac,dfrac
+
+\newcommand{\half}{\nicefrac12}
+\newcommand{\onequarter}{\nicefrac14}
+\newcommand{\threequarter}{\nicefrac34}
+
+%%%%%%%%%%%%%%%%%% Vectors and Reals
+\newcommand{\abs}[1]{\ensuremath{\left\lvert #1 \right\rvert}}
+\newcommand{\smallabs}[1]{\ensuremath{\lvert #1 \rvert}}
+%
+\newcommand{\norm}[1]{\ensuremath{\left\lVert #1 \right\rVert}}
+\newcommand{\smallnorm}[1]{\ensuremath{\lVert #1 \rVert}}
+%
+\newcommand{\mydot}[2]{\ensuremath{\left\langle #1, #2 \right\rangle}}
+\newcommand{\mysmalldot}[2]{\ensuremath{\langle #1, #2 \rangle}}
+\newcommand{\ip}[1]{\left\langle #1 \right\rangle}
+
+%%%%%%%%%%% Vectors
+\def\bfx{{\bf x}}
+\def\bfy{{\bf y}}
+\def\bfz{{\bf z}}
+\def\bfu{{\bf u}}
+\def\bfv{{\bf v}}
+\def\bfw{{\bf w}}
+\def\bfa{{\bf a}}
+\def\bfb{{\bf b}}
+\def\bfc{{\bf c}}
+\def\bff{{\bf f}}
+\def\bfg{{\bf g}}
+\def\bfp{{\bf p}}
+\def\bfq{{\bf q}}
+\def\bfX{{\bf X}}
+\def\bfY{{\bf Y}}
+\def\bfZ{{\bf Z}}
+\def\bfU{{\bf U}}
+\def\bfV{{\bf V}}
+\def\bfalpha{{\boldsymbol\alpha}}
+\def\bfbeta{{\boldsymbol\beta}}
+\def\bfgamma{{\boldsymbol\gamma}}
+\def\bftheta{{\boldsymbol\theta}}
+
+\newcommand{\zero}{\mathbf 0}
+\newcommand{\one}{{\mathbf{1}}}
+\newcommand{\zeroone}{{0/1}\xspace}
+\newcommand{\minusoneone}{{-1/1}\xspace}
+
+\newcommand{\yes}{{\sf Yes}\xspace}
+\newcommand{\no}{{\sf No}\xspace}
+
+%%%%%%%%%%%%%%%%%%%%% Linear Algebra
+\DeclareMathOperator\Span{Span}
+\DeclareMathOperator\kernel{ker}
+\DeclareMathOperator\im{Im}
+\DeclareMathOperator\image{Im}
+\DeclareMathOperator\tr{tr}
+\DeclareMathOperator\trace{tr}
+\newcommand{\pd}{\succ} % positive definite
+\newcommand{\psd}{\succeq} % positive semidefinite e.g. Q \psd 0
+
+
+%%%%%%%%%%%%%%%%%%%%%% General Useful Macros
+\newfont{\inhead}{eufm10 scaled\magstep1}
+\newcommand{\deffont}{\sf}
+
+\newcommand{\calA}{{\cal A}}
+\newcommand{\calB}{{\cal B}}
+\newcommand{\calC}{{\cal C}}
+\newcommand{\calG}{{\cal G}}
+\newcommand{\calL}{{\cal L}}
+\newcommand{\calU}{{\cal U}}
+\newcommand{\calP}{{\cal P}}
+\newcommand{\poly}{{\mathrm{poly}}}
+\newcommand{\polylog}{{\mathrm{polylog}}}
+\newcommand{\loglog}{{\mathop{\mathrm{loglog}}}}
+\newcommand{\suchthat}{{\;\; : \;\;}}
+\newcommand{\getsr}{\mathbin{\stackrel{\mbox{\tiny R}}{\gets}}}
+
+
+%%%%%%%%%% Operators
+\DeclareMathOperator\supp{Supp}
+\newcommand{\argmax}{\operatornamewithlimits{argmax}}
+
+%%%%%%%%%%%%%%%%%%% Complexity Classes
+\newcommand{\classfont}[1]{\textsf{#1}}
+\newcommand{\coclass}[1]{\mathbf{co\mbox{-}#1}} 
+\newcommand{\BPP}{\classfont{BPP}\xspace}
+\newcommand{\classP}{\classfont{P}\xspace}
+\newcommand{\NP}{\classfont{NP}\xspace}
+\newcommand{\coNP}{\classfont{coNP}\xspace}
+\newcommand{\nphard}{\classfont{NP}-hard\xspace}
+
+%%%%%%%%%%%%%%%%%%%% Problems
+% use texorpdfstring to avoid problems with hyperref (can use problem
+% macros also in headings
+\newcommand{\problemmacro}[1]{\textsf{#1}}
+
+\newcommand{\maxcsp}{\problemmacro{MAX-CSP}\xspace}
+\newcommand{\maxkcsp}{\problemmacro{MAX k-CSP}\xspace}
+\newcommand{\maxthreesat}{\problemmacro{MAX 3-SAT}\xspace}
+\newcommand{\maxthreexor}{\problemmacro{MAX 3-XOR}\xspace}
+\newcommand{\maxkxor}{\problemmacro{MAX k-XOR}\xspace}
+\newcommand{\maxcut}{\problemmacro{MAX-CUT}\xspace}
+
+%%%%%%%%%%%%%%%%%%%%%%%%% Enclosures
+\newcommand{\inparen}[1]{\left(#1\right)}             %\inparen{x+y}  is (x+y)
+\newcommand{\inbraces}[1]{\left\{#1\right\}}           %\inbrace{x+y}  is {x+y}
+\newcommand{\insquare}[1]{\left[#1\right]}             %\insquare{x+y}  is [x+y]
+\newcommand{\inangle}[1]{\left\langle#1\right\rangle} %\inangle{A}    is <A>
+
+
+%%%%%%%%%%%%%%%%%%%% Names
+\newcommand{\Erdos}{Erd\H{o}s\xspace}
+\newcommand{\Renyi}{R\'enyi\xspace}
+\newcommand{\Lovasz}{Lov\'asz\xspace}
+\newcommand{\Juhasz}{Juh\'asz\xspace}
+\newcommand{\Bollobas}{Bollob\'as\xspace}
+\newcommand{\Furedi}{F\"uredi\xspace}
+\newcommand{\Komlos}{Koml\'os\xspace}
+\newcommand{\Luczak}{\L uczak\xspace}
+\newcommand{\Kucera}{Ku\v{c}era\xspace}
+\newcommand{\Szemeredi}{Szemer\'edi\xspace}
+\newcommand{\Chvatal}{Chv\'atal}
+\newcommand{\Holder}{H\"{o}lder}
+\newcommand{\Plunnecke}{Pl\"unnecke}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newlength{\tpush}
+\setlength{\tpush}{2\headheight}
+\addtolength{\tpush}{\headsep}
+
+
+\newcommand{\titlebox}[5]
+{
+   \noindent
+   \begin{center}
+   \framebox{
+      \vbox{\vspace{2mm}
+    \hbox to 6.28in { {\bf #1 \hfill #2 } }
+       \vspace{4mm}
+       \hbox to 6.28in { {\Large \hfill #3 \hfill} }
+       \vspace{2mm}
+       \hbox to 6.28in { {#4 \hfill #5} }
+      \vspace{2mm}}
+   }
+   \end{center}
+   \vspace*{4mm}
+}
+
+
+\newcommand{\handout}[3]
+{
+\noindent\vspace*{-\tpush}\newline
+\parbox{\textwidth}
+{
+{
+% TTI Chicago  \hfill Handout N#1 \newline
+\coursenum : \coursename \hfill #2 \newline
+\courseprof \newline
+\mbox{}\hrulefill\mbox{}}\vspace*{1ex}\mbox{}\newline
+\bigskip
+\begin{center}{\Large\bf #1}\end{center}
+\bigskip
+}
+}
+
+

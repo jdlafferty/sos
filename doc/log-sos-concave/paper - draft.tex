@@ -1,0 +1,603 @@
+\documentclass[11pt,reqno]{amsart}
+\usepackage{amssymb,mathrsfs,color}
+\usepackage{pinlabel}
+\usepackage{graphicx}
+\input{macros_maxmod}
+
+%\usepackage[notcite,notref]{showkeys}
+
+%\textwidth=15cm \textheight=21.5cm
+%\oddsidemargin=0.5cm \evensidemargin=0.5cm
+\usepackage{amsmath} % for all math functions and operations
+\usepackage{amsfonts} % use this to write different scripts (e.g. Real nums, etc)
+\usepackage{mathtools} %for other math stuff not included in packages above
+\usepackage{amsthm} % in case you want the THM: COR: LEMMA: setup
+\usepackage[top=1in,bottom=1in,left=1in,right=1in]{geometry} %for setting the margins
+
+\setlength\parindent{0pt}
+\setcounter{equation}{0}
+\numberwithin{equation}{section}
+
+%%%% Define Additional Macros Here 
+
+\newcommand{\prf}{\begin{proof}}
+\newcommand{\eprf}{\end{proof}}
+\newcommand{\lft}{\left(}
+\newcommand{\rt}{\right)}
+\newcommand{\mr}{\mathbb{R}}
+\newcommand{\tb}{\textbf}
+\newcommand{\wh}{\widehat}
+\newcommand{\ov}{\overline}
+\newcommand{\mc}{\mathcal}
+\newcommand{\pa}{\partial}
+\newcommand{\be}{\beta}
+
+%%% Optimization problem (Use as a template if there are multiple constraints)
+%%% Usage: \optprob{<minimize or maximize>}{<variables>}{<objective>}{<constraint>}{<reference label>}
+\newcommand{\optprob}[5]
+{
+	\begin{equation}\label{#5}
+	\begin{aligned}
+	& \underset{#2}{\text{#1}}
+	& & #3 \\
+	& \text{\quad\ s.t.}
+	& & #4
+	\end{aligned}
+	\end{equation}
+}
+
+
+
+
+\title{Maximum Likelihood Estimation of a Multi-Dimensional Log-Concave Density Through SOS-Convexity}
+\author{Wei Hu, Max Cytrynbaum, YJ Choe}
+
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+We consider a tractable parametric relaxation of the log-concave maximum likelihood density estimation problem. Specifically, we let s(x) be a multivariate convex polynomial and consider densities of the form exp(-s(x)). While checking if a polynomial is convex is NP-hard in general, sos-convexity can be enforced using semi-definite programming. Log sos-concave maximum likelihood is formulated as a convex problem. We formulate an algorithm using projected stochastic gradient descent, in which biased gradient estimates are obtained through an MCMC sampling procedure that is efficient for log-concave densities. We motion towards the theoretical properties of our estimator, including consistency and asymptotic equivalence with the max-likelihood log-concave estimator discussed in Cule et al. (2008).
+
+\end{abstract}
+
+\section{Introduction and Motivation}
+
+Consider the general shape constrained max-likelihood problem. We are given data $\{x_i\}_{i = 1}^n$ and asked to find a density that maximizes the likelihood in some restricted class of densities $\mathcal{F}$. Formally, we seek 
+
+\[
+f^* = \argmax_{f \in \mathcal{F}} \ell(f) = \argmax_{f \in \mathcal{F}} \sum_{i = 1}^n \log f(x_i) \qquad (1)
+\]
+
+Log-concavity is a common shape constraint with a variety of well-studied properties. Densities in class have the form $f(x) = \exp(-s(x))$, where $s(x)$ is a convex function. Note that this nests several well known distributions, including normal, exponential, logistic, gamma (with shape parameter $\geq 1$), and many more. Indeed, the standard multivariate normal distribution with parameters $(\mu, \Sigma)$, has a density proportional to $f(x) = \exp(-s(x))$, where $s(x) = \frac{1}{2}(x - \mu)^T \Sigma^{-1} (x - \mu)$. Since $\Sigma^{-1} \succeq 0$, the quadratic form $x \to s(x)$ is clearly convex. \\
+
+More importantly for our purposes, there exist efficient MCMC-based algorithms for sampling from log-concave densities. For these  procedures, it can be shown that a Markov Chain with stationary distribution $f(x) = \exp(-s(x))$ is rapidly mixing. For more details and further references, see e.g. Narayanan and Rakhlin (2013) or Lov\'{a}sz and Vempala (2005). \\
+
+Cule et al. (2008) proposes an algorithm for the general log-concave max-likelihood problem. They show that for $\mathcal{F} = \{\text{log-concave functions}\}$ the $f^*$ in (1) above exists and is unique with probability 1. The paper also derives the form of the maximum likelihood estimator, showing that $x \to -s(x)$ is a piecewise-affine ``tent function'' supported on the convex hull of the data $C_n$. The density $f(x)$ is in general not smooth.\\
+
+We consider a relaxation of this problem, restricting our attention to the class of log-concave functions where $x \to s(x)$ is an sos-convex polynomial. While checking a polynomial's convexity is in general strongly NP-hard (Ahmadi 2011), determining sos-convexity can be formulated as a semi-definite program and can thus be checked in polynomial time. Using this insight, we propose an algorithm based on projected stochastic gradient descent, prove convergence, and demonstrate some of the properties of our estimator. \\
+
+\section{Convexity and SOS-Convexity}
+
+Note that this section closely follows the exposition in Amir Ali Ahmadi's 2011 MIT disseration (Ahmadi 2011). \\
+
+As is well known, a function $f$ defined on a convex set $K$ is called \emph{convex} if for all $x,y \in K$, $\lambda \in [0,1]$ we have $f(\lambda x + (1 - \lambda) y) \leq \lambda f(x) + (1 - \lambda) f(y)$. Ahmadi (2011) shows that, even for polynomials, this condition can generally not be checked in polynomial time. Specifically, he gives the following result, answering a previously open problem posed by N.Z. Shor. \\
+
+\begin{theorem}[Ahmadi (2011) Theorem 2.1] Deciding convexity of degree-four polynomials is strongly NP-hard. This is true even when the polynomials are restricted to be homogeneous. \\
+
+\end{theorem}
+
+This motivates the introduction of a relaxation of convexity, termed SOS or Sum-of-Squares convexity. \\
+
+Given a polynomial matrix $U(x)$ over $\mr^p$, we say that $U(x)$ is an SOS-matrix if there exists a factorization $U(x) = W(x)^TW(x)$, where $W$ is also a polynomial matrix. As is well known, for a smooth function $f$, a necessary and sufficient condition for convexity is that the Hessian $H_f$ is positive semidefinite $H_f \succeq 0$. Then we define \\
+
+\begin{definition}[SOS-Convexity] Let $f(x)$ be a polynomial over $\mr^p$. We say that $f$ is sos-convex if its Hessian is an sos-matrix i.e. there exists a polynomial matrix $W(x)$ such that 
+
+\[
+H_f(x) = W(x)^TW(x)
+\]
+
+\end{definition} 
+
+Note that for such polynomials, we have for $y \in \mr^p $ 
+
+\begin{align*}
+p(x,y) = y^T H_f y = y^T W(x)^T W(x) y = \|W(x) y\|_2^2 
+\end{align*}
+
+Then $p(x,y)$ is a sum-of-squares polynomial. In particular, we have $p \geq 0$ for all $x, y$, so $H_f \succeq 0$. Then clearly sos-convexity is a sufficient condition for convexity. In fact, it can be shown that we have the equivalent formulation of sos-convexity\\
+
+\begin{definition}[SOS-Convexity] Let $f(x)$ be a polynomial over $\mr^p$. We say that $f$ is sos-convex if for all $x, y \in \mr^p$, the polynomial defined by 
+
+\[
+p(x,y) = y^TH_f(x)y
+\]
+
+is SOS. \\
+
+\end{definition}
+
+Do there exist polynomials that are convex but not sos-convex? This question was answered in the affirmative by Ahmadi (2011). In fact we have \\
+
+\begin{theorem}[Ahmadi (2011)] Consider polynomials of degree $d$ over $\mr^p$. Except in the cases $n = 1$, $d = 2$, and $(n,d) = (2,4)$, there exists polynomials $f$ such that $f$ is convex but not sos-convex. In particular, for $p = 1$ (convex $\iff$ sos-convex). \\
+
+\end{theorem}
+
+Nevertheless, the tractability of checking sos-convexity through semidefinite programming makes it an attractive relaxation of polynomial convexity. Using these definitions and intuition, we formulate the log sos-concave maximum likelihood problem.
+
+\section{The Log SOS-Concave Maximum Likelihood Estimation Problem}
+
+First, we introduce some notation. For $x \in \mr^p$, we let $\bfv_d(x)$ denote the vector of all monomials in $x$ i.e. $\bfv_d(x) = (x_1, \hdots, x_p, x_1^2, x_1 x_2, \hdots, x_1^n, \hdots, x_p^n$). We again consider the family of log sos-concave densities supported on a convex set $K \subseteq \mathbb R^p$:
+
+\begin{equation} \notag
+p(\bfx) \propto \exp \left(-s(\bfx)\right)
+\end{equation}
+or
+\begin{equation} \notag
+p(\bfx) = \frac{\exp (-s(\bfx))}{\int_K \exp (-s({\bf t})) d{\bf t}}.
+\end{equation}
+where $s(\bfx)$ is an sos-convex polynomial. If we restrict the degree of $s$ to be at most $2d$, then we can express $s$ as 
+
+\[
+s(\bfx) = \bftheta^T\bfv_{2d}(\bfx) = \sum_{\bfalpha \in A_{2d}} \theta_\bfalpha \bfx^\bfalpha.
+\]
+
+where the $\bfalpha$ are multi-indices on $\mathbb{N}^p$. \\
+
+Given $n$ i.i.d. samples $\bfx_1, \cdots, \bfx_n$ from a distribution $p(\bfx; \bftheta)$, the likelihood is
+\begin{equation} \notag
+L(\bftheta) = \prod_{i = 1} ^n p(\bfx_i; \bftheta) = \frac{\exp \left( -\bftheta^T \sum_{i = 1}^n \bfv_{2d}(\bfx_i)   \right)}{(\int_K \exp (-\bftheta^T\bfv_{2d}(\bfx)) d{\bf x})^n},
+\end{equation}
+and then
+$$- \frac{1}{n} \log L(\bftheta) = \frac{1}{n} \bftheta^T \sum_{i = 1}^n \bfv_{2d}(\bfx_i) + \log \int_K \exp (-\bftheta^T\bfv_{2d}(\bfx)) d{\bf x}.$$
+
+So the maximum likelihood estimation of $s$ (or equivalently, $\bftheta$) can be summarized by the following optimization problem:
+\optprob{minimize}{\bftheta}{\frac{1}{n} \bftheta^T \sum_{i = 1}^n \bfv_{2d}(\bfx_i) + \log \int_K \exp (-\bftheta^T\bfv_{2d}(\bfx)) d{\bf x} }
+{\text{$\bftheta^T \bfv_{2d}(\bfx)$ is sos-convex.}}{maxlike-reg}
+
+Moreover we can show the following
+
+\begin{lemma}[Normalization] Suppose that $\theta^*$ is a solution to the above optimization problem. Then we have 
+
+\[
+\int_{K} \exp \lft -\bftheta^T \bfv_{2d}(\bfx) \rt d \bfx =1 
+\]
+
+i.e. the $\bftheta$ returned by our optimization problem above automatically gives a normalized density. 
+
+\end{lemma}
+
+\proof Omitted. \\
+
+
+Denote the above objective function by $g(\bftheta)$, which is a convex function. The gradient and Hessian of $g$ are:
+
+\begin{align}
+\nabla g(\bftheta) =& \frac{1}{n} \sum_{i = 1}^n \bfv_{2d}(\bfx_i) + \frac{\int_ K\exp (-\bftheta^T\bfv_{2d}(\bfx)) (-\bfv_{2d}(\bfx) )d{\bf x} }{\int_K \exp (-\bftheta^T\bfv_{2d}(\bfx)) d{\bf x}}\notag\\
+=& \frac{1}{n} \sum_{i = 1}^n \bfv_{2d}(\bfx_i) - \mathbb E_\bftheta (\bfv_{2d}(\bfX)),\label{neg-loglike-gradient}\\
+\nabla^2 g(\bftheta) =& \mathbb V_\bftheta (\bfv_{2d}(\bfX)), \label{neg-loglike-hessian}
+\end{align}
+
+where $\bfX$ is a random variable with distribution $p(\bfx; \bftheta)$. \\
+
+Note that since 
+
+\begin{equation} \label{obj-convex}
+\nabla^2 g(\bftheta) = \mathbb V_\bftheta (\bfv_{2d}(\bfX)) \succeq 0
+\end{equation}
+
+we immediately see that the problem defined above is convex. 
+
+\subsection{Projected Stochastic Gradient Descent}
+
+We will solve \eqref{maxlike-reg} using projected stochastic gradient descent. This generates a sequence $\{\bftheta_k\}_{k \ge 1}$ through the recursion:
+
+\begin{equation} \label{gpa-recursion}
+\bftheta_{k + 1} \leftarrow P_{sos} (\bftheta_k - \alpha_k (\nabla g(\bftheta_k) + \xi_k) ), k = 1, 2, \cdots
+\end{equation}
+
+where the initial point $\bftheta_1$ is feasible for \eqref{maxlike-reg}, $\{\alpha_k\}$ is a sequence of positive stepsizes, $\xi_k$ is the (stochastic) error in the gradient evaluation, and $P_{sos}(\bfgamma)$ is the projection of $\bfgamma$ onto the sos-convex cone $K_{sos}^{p,d} \subset \mr^{\binom{p + d}{d}}$. 
+
+\begin{equation} \label{sos-proj-reg}
+\begin{aligned}
+ P_{sos}(\bfgamma): \qquad & \underset{\bftheta}{\text{minimize} }
+& & \norm{\bftheta - \bfgamma}^2 \\
+& \text{\quad\ s.t.}
+& & \text{$\bftheta^T \bfv_{2d}(\bfx)$ is sos-convex.}
+\end{aligned}
+\end{equation}
+
+Our intuition for \eqref{gpa-recursion} is as follows: we would like to minimize the expression above, so we use gradient descent on $\bftheta$. However, our descent steps $\bftheta_k \to \bftheta_{k + 1}$ may take us outside of the sos-convex cone. Therefore, after each step, we project $\bftheta_{k + 1} = \bftheta_k - \alpha_k(\nabla g(\bftheta_k) + \xi_k)$ back onto the sos-convex cone and continue. \\
+
+\subsection{Projection onto $K_{sos}^{p,d}$ is an SDP} 
+Our problem \eqref{sos-proj-reg} above is equivalent to
+
+\begin{equation} \label{sos-proj-reg2}
+\begin{aligned}
+ P_{sos}(\bfgamma): \qquad & \underset{\bftheta, Q}{\text{minimize} }
+& & \norm{\bftheta - \bfgamma}^2 \\
+& \text{\quad\ s.t.}
+& & p(\bftheta, x) = \bftheta^T \bfv_{2d}(x) \quad \text{is sos} \\
+\end{aligned}
+\end{equation}
+
+We can show the following simple\\
+
+\begin{proposition} \label{sos-proj-reg-prop}
+The projection $P_{sos}(\bfgamma) $ onto the sos-convex cone $K_{sos}^{p,d}$ in \eqref{sos-proj-reg2} above can be formulated as an SDP. 
+\end{proposition}
+
+\proof 
+
+Consider the constraint that $p(\bftheta, x)$ is sos-convex. Let $H$ denote the Hessian of this polynomial. Note that $\bftheta \to H(\bftheta, x)$ is linear in $\bftheta$. Then the constraint above is equivalent to 
+
+\begin{equation} \label{proj_1} 
+p(x,y,\theta) = y^TH(\bftheta, x) y \quad \text{is an sos-polynomial}
+\end{equation} 
+
+It is easy to show that this is equivalent to 
+
+\begin{equation} \label{proj_2} 
+\begin{aligned}
+&p(x,y,\theta) = y^TH(\bftheta, x) y = (\bfv_{2d}(x), y)^T Q (\bfv_{2d}(x), y) \\
+&Q \succeq 0 
+\end{aligned} 
+\end{equation}
+
+i.e. $Q \in \mr^{\binom{p + d}{d} + p}$ is some positive semidefinite matrix. Then the problem in \eqref{sos-proj-reg} above can be reformulated as 
+
+\begin{equation} \label{sos-proj-reg3}
+\begin{aligned}
+ P_{sos}(\bfgamma): \qquad & \underset{\bftheta, Q}{\text{minimize} } \quad t \\
+&\norm{\bftheta - \bfgamma}^2  < t \\
+&y^TH(\bftheta, x) y = (\bfv_{2d}(x), y)^T Q (\bfv_{2d}(x), y) \\
+&Q \succeq 0 
+\end{aligned}
+\end{equation}
+
+It is routine to show that a quadratic constraint such as $\norm{\bftheta - \bfgamma}^2  < t $ above can be written as a linear matrix inequality (see e.g. Boyd (1998)). Therefore we get the final form 
+
+\begin{equation} \label{sos-proj-reg4}
+\begin{aligned}
+ P_{sos}(\bfgamma): \qquad & \underset{\bftheta, Q}{\text{minimize} } \quad t \\
+&y^TH(\bftheta, x) y = (\bfv_{2d}(x), y)^T Q (\bfv_{2d}(x), y) \\
+&\begin{bmatrix} P & 0\\  0 & Q\end{bmatrix} \succeq 0 
+\end{aligned}
+\end{equation}
+
+Where the LMI constraint $P \succeq 0$ is equivalent to the quadratic constraint in \eqref{sos-proj-reg3} above. Since $\bftheta \to y^T H(\bftheta, x) y$ is linear in $\bftheta$ (and $Q \to a^T Q a$ linear in $Q$) we have a linear objective function with LMI constraints, so this is an SDP. \qed 
+
+\section{Algorithm Properties and Convergence} 
+
+******\\
+******\\
+
+Wei - Insert updated algorithm properties document \\
+
+******\\
+******\\
+
+\section{Statistical Properties of the Max-Likelihood Log SOS-Concave Estimator} 
+
+We discuss some of the statistical properties of our estimator. Here, we let $K$ be a compact, convex set. We will assume that sos-convex polynomials are dense in continuous convex functions in the sense of $\| \cdot \|_{K, \infty}$. This assumption will be proved for the case $p =1$. \\
+
+Let $f_n$ be the max-likelihood log-concave density returned by the algorithm in Cule et al. (2008). We show that 
+
+\begin{theorem} \label{stat-prop} We have the following results \\
+
+(i) Convergence in likelihood values 
+
+\begin{equation} \label{stat-obj-val}
+g_d(\bftheta^*) \longrightarrow \sum_{i = 1}^n \log f_n(x_i) \qquad (d \to \infty) 
+\end{equation}
+
+That is, the objective value $g_d(\bftheta^*)$ returned by our program (for polynomials up to degree $d$) approaches the objective value returned by the max-likelihood log-concave estimator as $d \to \infty$.\\
+
+(ii) For any $n$, there exist a sequence of polynomials $p_n^m(\bfx; \bftheta)$ with $\bftheta \in K_{sos}^p$ (we do not restrict degree) such that 
+
+\begin{equation} \label{stat-distr}
+p_n^m\overset{\mathcal{D}}{\longrightarrow} f_n \qquad (m \to \infty) 
+\end{equation}
+\end{theorem}
+
+Note that we will give the proof for general $p$, completing the denseness result for sos-convex polynomials in continuous convex functions only for the case $p = 1$. 
+
+\proof Working on a compact, convex set $K$ as above, we let SOSX denote the sos-convex polynomials, SMSX denote smooth strictly convex, SMX smooth convex, CTSX continuous convex. We will show the chain of denseness relations (in the sense of $\| \cdot \|_{\infty, K}$)
+
+\begin{equation} \label{dense-relation}
+SOSX \overset{dense}{\subset} SMSX \overset{dense}{\subset} SMX \overset{dense}{\subset} CTSX 
+\end{equation}
+
+\subsection{Denseness of SOSX in SMSX} Note that we are only able to give the proof for the case $p =1$. Let $f \in SMSX$. In this case, we just have $K = [a,b]$ for some $a < b$. Then $f'' > 0$ on $K$. Using Stone-Weierstrass, let $q_m$ be a sequence of polynomials $q_m \to f''$ in $\| \cdot \|_{\infty}$. Then there exists an $M$ such that $m \geq M$ implies $q_m > 0$ on $K$. Restrict to this subset. \\
+
+Define polynomials 
+
+\begin{equation} \label{poly-def}
+p_m(x) = \int_a^x \lft \int_a^t q_m(s) ds \rt dt 
+\end{equation}
+
+Then clearly we have $\frac{\pa^2}{\pa x^2} p_m(x) = q_m(x)$. In particular, $p_m$ is strictly convex on $K$, so $p_m$ is an sos-convex polynomial by the results in section 2. Since $b - a < \infty$, it is easy to see that $p_m \to f$ uniformly on $[a,b]$ (one way to do this is to apply bounded convergence twice to the expression in \eqref{poly-def} above). \\
+
+Therefore, we have shown that $\overline{SOSX} \supset SMSX$. 
+
+\subsection{Denseness of SMSX in SMX} We want to show that smooth strictly convex functions are dense in smooth convex functions i.e. $ \overline{SMSX} \supset SMX$. This is easy. Fix $\eps > 0$. Let $f \in SMX$. Then $f_{\eps}(x) := f(x) + \eps \|x \|_2^2$ is strictly convex and 
+
+\[
+|f_{\eps}(x) - f(x)| \leq \eps \|x\|_2^2 \leq \eps \cdot Diam(K)^2
+\]
+
+for$x \in K$. Then $\|f_{\eps} - f\|_{\infty} \to 0$ as $\eps \to 0$, so we have the density result. 
+
+\subsection{Denseness of SMX in CTSX} - Here, we assume that $f \in CTSX(K)$. Extend $f$ continuously to Suppose that $f$ is such a function and let $\delta = d(K, K_1^c)$. \\
+
+Convolution with a positive function preserves convexity. This is easily seen from the definition. Let $f$ convex on $\mr^p$ and $\phi \geq 0$, then 
+
+\[
+(\phi \ast f)(x) = \int_{\mr^p} \phi(t) f(x - t) dt 
+\]
+
+Each $f_t(x) := f(x -t)$ is convex, therefore the convolution above is convex. \\
+
+Let $\phi$ be a smooth, compactly supported function (e.g. a bump function). For $\eps > 0$, define a class of functions $\phi_{\eps} = \frac{1}{\eps} \phi(\frac{x}{\eps})$. Fix $f$ a continuous convex function. Then $f$ is bounded on $K$. Define a class of functions $f_{\eps} := (\phi_{\eps} \ast f)$. The standard arguments show that (i) $f_{\eps}$ is $C^{\infty}$ for each $\eps$ (ii) $f_{\eps} \to f$ uniformly on any compact set and (iii) $f_{\eps}$ is convex for all $\eps$. This will exhibit $f$ as a limit point of $SMX$, showing that $\overline{SMX} \supset CTSX$. \\
+
+Note that (iii) was shown above and essentially follows from the definition of convexity. Since $\phi$ is compactly supported and $f$ continuous, the family of convolutions defined above converge for all $x \in \mr^p$. First we need the following 
+
+\begin{lemma} \label{cts-convex-grad} 
+Let $f \in CTSX(K)$, where $K \subset \mr^p$ is compact and convex. Then
+
+\begin{equation} \label{grad-set}
+\underset{g \in \pa f(x), \; x \in K}{ \max} \|g\|_2  < \infty 
+\end{equation}
+
+is bounded. 
+\end{lemma}
+
+\proof Note that convexity guarantees the existence of subgradients at each point. In the smooth case, this just says that the gradient is bounded on $K$, which is clearly true since it is compact. The proof of the general statement is omitted but is relatively easy to show from the definition of a subgradient. \\
+
+\begin{lemma} \label{cts-convex-extension}
+Suppose that $f$ and $K$ are as in the previous lemma. Then there exists an extension of $f$ to a continuous and convex function $\ov{f}$ defined on $\mr^p$. 
+\end{lemma}
+
+\proof Omitted. \\
+
+For (i), note that 
+
+\begin{equation} \label{conv-def}
+(\phi \ast f)(x) = \int_{\mr^p} \phi(t) f(x - t) dt = \int_{\mr^p} \phi(x - t) f(t) dt 
+\end{equation}
+
+so that whenever we need to take a derivative $\frac{\pa}{\pa x_{\alpha}} (\phi \ast f)(x)$, we just pass the differentiation operator through the integral (formal justification using dominated convergence can be given since $\phi$ is compactly supported and $f$ continuous). Thus, we just differentiate the integrand $\phi$, which is $C^{\infty}$ by assumption. \\
+
+For (ii), rewrite the integral above as 
+
+\begin{equation} \label{conv2}
+\begin{aligned}
+f_{\eps} = (\phi_{\eps} \ast f)(x) &= \int_{\mr^p} \phi_{\eps}(t) f(x - t) dt\\
+&=\int_{B_{\eps}} \phi_{\eps}(t) f(x - t) dt + \int_{B_{\eps}^c} \phi_{\eps}(t) f(x - t) dt
+\end{aligned}
+\end{equation}
+
+Where we choose $B_{\eps}$ a very small ball containing $0$ of radius $h(\eps)$ such that (i) $\int_{B_{\eps}} \phi \approx 1$ and (ii) $\phi \approx 0 $ on $B_{\eps}^c$ as well as (iii) $f(x-t) \approx f(x)$ for $t \in B_{\eps}$ (this is where we use continuity on the class $CTSX$). Then, roughtly, the above decomposition gives 
+
+\begin{equation} \label{conv3}
+\begin{aligned}
+&\int_{B_{\eps}} \phi_{\eps}(t) f(x - t) dt + \int_{B_{\eps}^c} \phi_{\eps}(t) f(x - t) dt\\
+&\approx f(x) \int_{B_{\eps}} \phi_{\eps}(t) dt + \int_{B_{\eps}^c} 0 \cdot f(x -t) dt \\
+&\approx f(x) \cdot 1 + 0 = f(x)
+\end{aligned}
+\end{equation}
+
+I claim that this gives uniform convergence $\|(\phi_{\eps} \ast f) - f\|_{\infty, K} \to 0$. Note that continuity of $f$ on $K$ implies uniform continuity, so the the approximation of the first integral in the above decomposition can be made uniform. $f$ is uniformly bounded on $\mr^p$, so the $2^{nd}$ integral above goes to $0$ uniformly. This sketch can be made rigorous but the arguments are relatively standard. \\
+
+Then we have shown that \\
+
+\begin{equation} \label{dens-summ}
+SOSX \longrightarrow SMSX \longrightarrow SMX \longrightarrow CTSX
+\end{equation}
+
+where the arrow denotes density (in the sense of $\| \cdot \|_{K,\infty}$ for a fixed $K$ compact and star-shaped). In particular, we have shown that sos-convex polynomials are dense in continuous convex functions on a compact, convex set $K$. \\
+
+Consider the shape-constrained maximum-likelihood estimator $f_n$ from the Cule paper. In this section, we show that there exists a a sequence of log sos-concave densities $p_n^m$ that converge in distribution to the Cule estimator $f_n$. \\
+
+We also show that, as $d \to \infty$, the objective value, i.e. the achieved likelihood, of our program converges to the max-likelihood among log-concave estimators (the objective value of Cule's program). \\
+
+Our approach will be as follows. Given the convex hull of the data $C_n$, we will construct a set $K = C_n^{\eps}$ such that $\mc{L}(C_n^{\eps} \setminus C_n) = \eps$, where $\mc{L}$ denotes Lebesgue measure. \\
+
+We will then extend the concave function $s_n$ defining the Cule estimator ($f_n = \exp(s_n)$) to $K$ in such a way that (i) our extension is convex and (ii) our extension is increasingly negative on $\pa K$. Using our work above, let $p_m$ be a sequence of sos concave functions such that converge to our extension in $\| \cdot \|_{\infty}$. We will then argue that for any bounded function $G$ on $\mr^p$, we have 
+
+\[
+\int_{\mr^p} G(x) \exp(p_m(x)) = \int_{K^c} G(x) \exp(p_m(x)) + \int_{K \setminus C_n} G(x) \exp(p_m(x)) + \int_{C_n} G(x) \exp(p_m(x))
+\]
+
+We will show that (1) the first integral is small because loosely $p_m(x) \approx - \infty$ on $K^c$.  (2) The second integral is small because $\mc{L}(C_n^{\eps} \setminus C_n) \to 0$ as $\eps \to 0$. Finally, (3) the last integral converges to $\int_{C_n} G(x) f_n(x)$ because $\|p_m - s_n\|_{\infty,C_n} \to 0$. A rigorous formulation of this argument will show that for any bounded function $G$ we have 
+
+\[
+\int_{\mr^p} G(x) \exp(p_m(x)) dx \to \int_{\mr^p} G(x) f_n(x) dx \quad (m \to \infty) 
+\]
+
+i.e. $p_m$ converges to $f_n$ in distribution. \\
+
+\tb{Definition of $K$} - Consider the tent function $s_n$ from Cule's paper. $s_n = -\infty$ outside of $C_n$. Note that as a convex hull, we have $C_n = \{Ax \leq b\}$ for some matrix $A \in \mr^{n \times p}$ and $b \in \mr^n$. Consider the set $C_n^{\eps} = \{Ax \leq b + \epsilon 1\}$. Note that since $C_n$ is of finite Lebesgue measure, then so is $C_n^1$ because this only depends on the $a_i$. Then we can apply elementary measure theory to show that 
+
+\[
+\mc{L}(C_n) = \mc{L} \lft \bigcap_{\eps > 0} C_n^{\eps} \rt = \lim_{\eps \to 0} \mc{L}(C_n^{\eps})
+\]
+
+Therefore, for instance, we can make $\mc{L}(C_n^{\eps} \setminus C_n)$ arbitrarily small by letting $\eps \to 0$. Let $K_1 \supset C_n$ a polytope of the above form such that $\mc{L}(K_1 \setminus C_n) < \eps$. From Cule, there exists a triangulation of $C_n$ such that $s_n$ is affine on each simplex in the triangulation. \\
+
+Extend this triangulation to a triangulation of the polytope $K_1$ and extend $s_n$ to $\overline{s_n}$ on $K_1$ by defining piecwise affine functions such that $\overline{s_n} = 0$ on $\pa K_1$. Since $Vol(K_1 \setminus C_n)$ is arbitrarily small and $\overline{s_n}$ is bounded on $K_1$, this extension does not affect the value of the integral 
+
+\[
+\int_{\mr^p} G(x) \exp(s_n) 
+\]
+
+asymptotically as $\eps = Vol(K_1 \setminus C_n) \to 0$. Therefore, wlog, we will assume from now on that $s_n$ vanishes on $\pa C_n$. \\
+
+\tb{Extension of $s_n$ to $K$} - Define $\wh{s_n}$ such that $\wh{s_n}(x) = s_n(x)$ for $x \in C_n$ and $\wh{s_n}(x) = 0$ on $C_n^c$. Then $s_n$ is continuous but is in general no longer concave. Define a function on $K$ by 
+
+\[
+g(x) = \widehat{s_n}(x) - M \cdot d(x,C_n) 
+\]
+
+\emph{Claim} - There exists an $N$ such that $M \geq N$ implies that $g$ is concave on $K$. Note that the set distance term is identically $0$ on $C_n$ and $\wh{s_n}$ is identically $0$ on $C_n^c$. Moreover, the set distance term is concave, since $x \to d(x,S)$ is a convex function whenever $S$ is a convex set. \\
+
+By concavity of the original Cule function $s_n$ on $C_n$, for each point $x \in C_n$, the subgradient set $\pa s_n(x)$ is non-empty. In fact, from Cule's work we know that $s_n$ has the form 
+
+\begin{align*}
+s_n(x) &= \sum_k (a_k^T x + b_k) I(C_n^k) \quad (x \in C_n) \\
+&= - \infty \quad else
+\end{align*}
+
+Where $C_n^k$ is a triangulation of the convex hull $C_n^k$. We can show that \\
+
+\emph{Lemma} - For a function of the form above, $x \in C_n^k \implies a_k \in \pa s_n(x)$. The only non-trivial part of the argument is dealing with points $x \in \pa C_n^k$. Proof omitted. \\
+
+\tb{Subgradient argument} - To show that our extension $g(x)$ is concave, it suffices to show that $\pa g(x) \not = \emptyset$ for each $x \in K$. Then by concavity of the disjointly supported pieces of $g(x)$, it suffices to show that the subgradient condition is satisfied for each $x \in C_n$, $y \in K \setminus C_n$ and conversely. \\
+
+Consider $x \in C_n$ and $y \in K \setminus C_n$. Let $p_{y^*}$ denote the projection of $y$ onto $C_n$. In our construction of $g(x)$, choose 
+
+\[
+M \geq N = \max_{k} \|a_k\|_2 
+\]
+
+i.e. over all vectors defining the piecewise affine function $s_n$. Then we can calculate as follows 
+
+\begin{align*}
+g(y) - g(x) &= g(y) - g(p_{y^*}) + g(p_{y^*}) - g(x) = -M \|y - p_{y^*}\| + g(p_{y^*}) - g(x) \\
+&\leq -M \|y - p_{y^*}\| + \pa g(x)^T(p_{y^*} - x) = -M \|y - p_{y^*}\| + \pa g(x)^T(p_{y^*} - y +y - x) \\
+&\leq 0 + \pa g(x)^T(y - x) 
+\end{align*}
+
+Note that the $1^{st}$ inequality follows by concavity of $g$ on $C_n$, while the $2^{nd}$ inequality follows from Cauchy-Schwarz and our choice of $M$. A similar argument can be used to show that subgradients of $g$ exist for $x \in K \setminus C_n$. Then $g$ is concave on $K$. \\
+
+By construction, for $M \geq N$ we have that $g$ is a concave function. Note that $x \in \pa K \implies d(x,K) \geq \eps$. Choose $K = C_n^{\eps}$ as previously defined, where $M_{\eps} \cdot \eps = N_{\eps} \to \infty$ as $\eps \to 0$.\\
+
+\tb{Convergence argument} - We argue that $\int_{K^c} \exp(p_m) \to 0$ as $m \to \infty$. Let $x \in K^c$. Let $\pi_x$ denote the projection of $x$ onto $C_n$. Then there exists a point $x_0 \in \pa K \cap [\pi_x, x]$. Consider a function $\gamma(t) = p_m(\nu(t))$, where $\nu$ is a parametrization of the line $[\pi_x, x]$. Let $\nu(0) = \pi_x$ and $\nu(a) = x_0$. Then there exists a $c$ such that \\
+
+\begin{align*}
+&-M \eps = \gamma(a) - \gamma(0) = \gamma'(c) \|\pi_x - x_0\|\\
+&\implies \gamma'(c) \leq \frac{-M \eps}{\|\pi_x - x_0\|} \leq \frac{-M \eps}{Diam(K)} 
+\end{align*}
+
+Since $\gamma$ is concave and $c \in [0,a]$, we then also have $\gamma'(a) \leq \frac{-M \eps}{Diam(K)}$. Then Taylor implies that 
+
+\begin{align*}
+p_m(x) = \gamma(1) &= \gamma(a) + \gamma'(a) \|x_0 - x\| + \frac{1}{2} \gamma''(d) \|x_0 - x\|^2\\
+&\leq -M \eps + \frac{-M \eps}{Diam(K)} \|x - x_0\| \leq \frac{-M \eps}{Diam(K)} \|x - x^*\|
+\end{align*} 
+
+Where $x^*$ is the projection of $x$ onto $K$. Let $\phi_m = p_m + M \eps $. Then we have 
+
+\begin{align*}
+\int_{K^c} \exp(p_m) \leq \exp(-M \eps) \int_{K^c} \exp(\phi_m) \leq \exp(-M \eps) \int_{K^c} \exp \lft \frac{-M \eps}{Diam(K)}\|x - x_0\| \rt 
+\end{align*}
+
+We chose $m$ such that $M(\eps) \eps \to \infty$ as $\eps \to 0$. Then in particular for large enough $m$ the integral is 
+
+\[
+\leq \int_{K^c} \exp \lft -\|x - x^*\| \rt  = \int_{K^c} \exp \lft -d(x,K) \rt 
+\]
+
+This integral clearly converges since $K$ is compact. Since $-M \eps \to \infty$ as $\eps \to 0$, for any bounded function $\|G\|_{\infty, \mr^p} \leq B$ we have that 
+
+\[
+\int_{K^c} G \cdot \exp (p_m)  \to 0 \quad (m \to \infty) 
+\]
+
+\tb{Summary of Integral Resuts} - Note that by construction, we have $\mc{L}(C_n^{\eps} \setminus C_n) \to 0$ as $\eps \to 0$. Moreover, we used density of sos-convex polynomials to choose $p_m$ such that $|p_m(x)| \leq |p_m(x) - g_m(x)| + |g_m(x)| \leq \epsilon + 0 \leq 1$ on $C_n^{\eps} \setminus C_n$. Therefore we easily have that 
+
+\[
+\int_{C_n^{\eps} \setminus C_n} G \cdot \exp(p_m) \leq \int_{C_n^{\eps} \setminus C_n} Be = Be \cdot \mc{L}(C_n^{\eps} \setminus C_n) \to 0
+\]
+
+For the final integral in the decomposition, we have 
+
+\[
+\int_{C_n} G \cdot \exp(p_m) \to \int_{C_n} G \cdot s_n
+\]
+
+by bounded convergence on a finite measure space, with bound \\
+
+\[
+\|G \exp(p_m) \|_{\infty, C_n} \leq B \cdot (\|s_n\|_{\infty, C_n} + 1) 
+\]
+
+ Note that the latter bound is fixed for all $m$. Therefore, for any bounded function $G$ we have that 
+
+\[
+\int_{\mr^p} G\cdot \exp(p_m) \to \int_{\mr^p} G \cdot \exp(s_n) 
+\]
+
+In particular 
+
+\[
+\int_{\mr^p} \exp(p_m) \to \int_{\mr^p} \exp(s_n ) = 1
+\]
+
+Let $z_m = \frac{\exp(p_m)}{\int_{\mr^p} \exp(p_m)} $. Then the argument above shows that for any bounded function $G$
+
+\[
+\int_{\mr^p} G\cdot z_m \to \int_{\mr^p} G \cdot f_n
+\]
+
+So that we have convergence in distribution $z_m \to f_n$. \\
+
+\tb{Convergence of objective function value} - Consider a function $z_m$ as constructed above such that $\|z_m - f_n\|_{\infty} \leq \eps$. Then for data $\{x_i\}_{i = 1}^n$, we must have in particular that $z_m(x_i) \geq f_n(x_i) - \eps$. Therefore, if we let $L$ denote the non-parametric likelihood, we have 
+
+\[
+L(z_m) \geq L(f_n) - n \eps_m \to L(f_n) \quad (m \to \infty) 
+\]
+
+Since $z_m \in SOSX$, the function returned by our convex problem must do better, so in particular our objective value converges to Cule's objective value as we let $d \to \infty$ (our construction uses $z_m$ of potentially arbitrarily high log-degrees). \\
+
+\tb{Convergence of Our Estimator in Distribution} - It remains to show that our estimator converges in distribution to the Cule estimator. Let our estimator for degree $d$ be denoted by $\be_d$. Then we know that $L(\be_d) \to L(f_n)$ as $d \to \infty$. We somehow need to use convergence of likelihood values + the shape constraint that $\beta_m$ is in particular log-concave. \\
+
+\section{Conclusion} Conclude here. 
+
+
+
+
+
+
+
+
+\begin{thebibliography}{9}
+
+\bibitem{Christakis}
+Christakis, N., Fowler, J., Imbens, G., and Kalyanaraman, K., 
+``An Empirical Model for Strategic Network Formation,'' 
+\emph{forthcoming} 
+
+\bibitem{Mele}
+Mele, A., 
+``A Structural Model of Segregation in Social Networks,'' 
+\emph{forthcoming} 
+
+\bibitem{Hitsch}
+Hitsch, G., Hortacsu, A., and Ariely, D. 
+``Matching and Sorting in Online Dating,'' 
+\emph{American Economic Review, 2010} 
+
+\bibitem{Graham}
+Graham, B., Imbens, G., and Ridder, G. 
+``Measuring the Effects of Segregation in the Presence of Social Spillovers: a Nonparametric Approach,'' 
+\emph{forthcoming} 
+
+\bibitem{Fowler}
+Fowler, F. and Christakis, N. (2007) 
+``Cooperative Behavior Cascades in Human Social Networks,'' 
+\emph{Proceedings of the National Academy of Science, 2007} 
+
+\bibitem{Jackson}
+Jackson, M., 
+``Social and Economic Networks,'' 
+\emph{Princeton University Press, 2008} 
+
+
+
+	
+\end{thebibliography}
+
+
+\end{document} %anything after this line will not be in the document
